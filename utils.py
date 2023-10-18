@@ -128,7 +128,7 @@ class RigidBody:
                 P = P + 1
                 sampled_configurations.append(configuration)
         
-        return sampled_configurations
+        return np.array(sampled_configurations)
     
     #Function responsible for plotting a configuration
     def plot_configuration(self, configuration, color = 'r'):
@@ -196,7 +196,7 @@ class RRT:
         self.vertices = np.ones(shape = (1, start.shape[0]))
         self.vertices[0] = self.start
         
-        self.edges = np.ones(shape = (len(self.vertices), len(self.vertices)))
+        self.edges = np.zeros(shape = (len(self.vertices), len(self.vertices)))
         self.rigid_body = rigid_body
         
     #Add vertex where vertex is a C space point
@@ -226,6 +226,26 @@ class RRT:
             self.edges[closest_vertex_index, -1] = 1
             self.edges[-1, closest_vertex_index] = 1    
     
+    def D(self, point):
+        point = point.flatten()
+        return 0.7 * np.linalg.norm(point[:-1]) + 0.3 * np.deg2rad(np.abs(point[-1]))
+
+
+#Class Representing Probabilistic Road Map
+class PRM:
+    def __init__(self, N, rigid_body = None):        
+        self.rigid_body = rigid_body
+        self.configurations = rigid_body.sample_configuration_collision_free(N)
+        self.edges = np.zeros(shape = (N, N))
+        
+    def compute_edges(self):
+        k = 3
+        for index in range(len(self.configurations)):
+            target_configuration = self.configurations[index].flatten()
+            configurations = self.configurations
+            neighbor_distances = np.apply_along_axis(func1d = self.D, axis = 1, arr = configurations - target_configuration)
+            neighbor_indices = np.delete(np.argsort(neighbor_distances), index) [:k]
+            
     def D(self, point):
         point = point.flatten()
         return 0.7 * np.linalg.norm(point[:-1]) + 0.3 * np.deg2rad(np.abs(point[-1]))
