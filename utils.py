@@ -235,19 +235,19 @@ class RRT:
 class PRM:
     def __init__(self, N, rigid_body = None):        
         self.rigid_body = rigid_body
-        self.configurations = rigid_body.sample_configuration_collision_free(N)
+        self.vertices = rigid_body.sample_configuration_collision_free(N)
         self.edges = np.zeros(shape = (N, N))
         
     def compute_edges(self):
         k = 3
-        for index in range(len(self.configurations)):
-            target_configuration = self.configurations[index].flatten()
-            configurations = self.configurations
+        for index in range(len(self.vertices)):
+            target_configuration = self.vertices[index].flatten()
+            configurations = self.vertices
             neighbor_distances = np.apply_along_axis(func1d = self.D, axis = 1, arr = configurations - target_configuration)
             neighbor_indices = np.delete(np.argsort(neighbor_distances), index) [:k]
             
             for neighbor_index in neighbor_indices:
-                if self.is_edge_valid(target_configuration, self.configurations[neighbor_index]):
+                if self.is_edge_valid(target_configuration, self.vertices[neighbor_index]):
                     self.edges[index, neighbor_index] = 1
                     self.edges[neighbor_index, index] = 1
                     break
@@ -275,12 +275,19 @@ class PRM:
         k = 3
         target_configurations = [start, goal]
         for target_configuration in target_configurations:
-            configurations = self.configurations
+            configurations = self.vertices
             neighbor_distances = np.apply_along_axis(func1d = self.D, axis = 1, arr = configurations - target_configuration)
             neighbor_indices = np.argsort(neighbor_distances) [:k]
             
-        pass
-    
+            for neighbor_index in neighbor_indices:
+                if self.is_edge_valid(target_configuration, self.vertices[neighbor_index]):
+                    self.vertices = np.vstack((self.vertices, target_configuration.reshape((1, -1))))
+                    self.edges[-1, neighbor_index] = 1
+                    self.edges[neighbor_index, -1] = 1
+                    break
+        
+        #RUN SEARCH ALGORITHM HERE
+            
     def D(self, point):
         point = point.flatten()
         return 0.7 * np.linalg.norm(point[:-1]) + 0.3 * np.deg2rad(np.abs(point[-1]))
