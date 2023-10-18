@@ -250,6 +250,7 @@ class PRM:
                 if self.is_edge_valid(target_configuration, self.configurations[neighbor_index]):
                     self.edges[index, neighbor_index] = 1
                     self.edges[neighbor_index, index] = 1
+                    break
         
     
     #Tell if Edge is valid based on collision checking in workspace
@@ -271,6 +272,13 @@ class PRM:
 
     #Shortest path from start -> goal
     def answer_query(self, start, goal):
+        k = 3
+        target_configurations = [start, goal]
+        for target_configuration in target_configurations:
+            configurations = self.configurations
+            neighbor_distances = np.apply_along_axis(func1d = self.D, axis = 1, arr = configurations - target_configuration)
+            neighbor_indices = np.argsort(neighbor_distances) [:k]
+            
         pass
     
     def D(self, point):
