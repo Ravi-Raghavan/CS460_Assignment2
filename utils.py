@@ -246,6 +246,33 @@ class PRM:
             neighbor_distances = np.apply_along_axis(func1d = self.D, axis = 1, arr = configurations - target_configuration)
             neighbor_indices = np.delete(np.argsort(neighbor_distances), index) [:k]
             
+            for neighbor_index in neighbor_indices:
+                if self.is_edge_valid(target_configuration, self.configurations[neighbor_index]):
+                    self.edges[index, neighbor_index] = 1
+                    self.edges[neighbor_index, index] = 1
+        
+    
+    #Tell if Edge is valid based on collision checking in workspace
+    def is_edge_valid(self, vertexA, vertexB):
+        vertexA = vertexA.flatten()
+        vertexB = vertexB.flatten()
+        
+        #Check path from vertexA to vertexB
+        timesteps = 5
+        is_valid_path = True
+        
+        for timestep in range(1, timesteps + 1):
+            configuration = vertexA + ((vertexB - vertexA) * timestep / timesteps)
+            if self.rigid_body.check_configuration_collision(self.rigid_body.generate_rigid_body_from_configuration(configuration)):
+                is_valid_path = False
+                break
+        
+        return is_valid_path
+
+    #Shortest path from start -> goal
+    def answer_query(self, start, goal):
+        pass
+    
     def D(self, point):
         point = point.flatten()
         return 0.7 * np.linalg.norm(point[:-1]) + 0.3 * np.deg2rad(np.abs(point[-1]))
