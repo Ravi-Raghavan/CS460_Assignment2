@@ -1,0 +1,50 @@
+#Rotate rigid body about center
+    def rotate(self, event):
+        #Change angle of rotation
+        delta_rotation_angle = 10 if event == "up" else -10
+        
+        #Set up new rotation angle
+        new_rotation_angle = self.rotation_angle + delta_rotation_angle
+        new_rotation_angle = new_rotation_angle + 360 if new_rotation_angle < 0 else new_rotation_angle
+        new_rotation_angle = new_rotation_angle % 360
+                
+        #Modify the Rigid Body
+        modified_rigid_body = self.rigid_body - self.center_point
+        modified_rigid_body = np.hstack((modified_rigid_body, np.ones(shape = (modified_rigid_body.shape[0], 1)))).T
+
+        #Rotate the Rigid Body
+        angle = np.deg2rad(delta_rotation_angle)
+        rotation_matrix = np.array([[np.cos(angle), -1 * np.sin(angle), self.center_point[0]], [np.sin(angle), np.cos(angle), self.center_point[1]], [0, 0, 1]])
+        new_rigid_body = (rotation_matrix @ modified_rigid_body).T 
+        new_rigid_body = new_rigid_body[:, :-1]
+        
+        if not self.check_configuration_collision(new_rigid_body):
+            self.rigid_body = new_rigid_body
+            self.rotation_angle = new_rotation_angle
+
+    #translate rigid body
+    def translate(self, event):
+        #r: total translation across x and y
+        r = 0.05
+        angle_of_rotation = self.rotation_angle if event == "right" else self.rotation_angle - 180
+        delta = np.array([r * np.cos(np.deg2rad(angle_of_rotation)), r * np.sin(np.deg2rad(angle_of_rotation)), 1])
+        
+        #Form the Translation Matrix
+        translation_matrix = np.identity(3)
+        translation_matrix[:, -1] = delta
+        
+        #Modify the Center of the Rigid Body using the translation matrix
+        modified_center_point = np.vstack((self.center_point.reshape(-1, 1), np.array([[1]])))
+        new_center_point = translation_matrix @ modified_center_point
+        new_center_point = new_center_point.flatten()[:-1]
+        
+        #Modify the Rigid Body Vertices using the translation matrix
+        modified_rigid_body = np.hstack((self.rigid_body, np.ones(shape = (self.rigid_body.shape[0], 1)))).T
+        new_rigid_body = (translation_matrix @ modified_rigid_body).T
+        new_rigid_body = modified_rigid_body[:, :-1]
+        
+        if not self.check_configuration_collision(new_rigid_body):
+            self.rigid_body = new_rigid_body
+            self.center_point = new_center_point
+        
+        self.body_centroid[0].set_data([self.center_point[0], self.center_point[1]])
