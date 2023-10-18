@@ -9,10 +9,9 @@ rigid_polygons_file = "rigid_polygons.npy"
 rigid_body = RigidBody(f, ax, rigid_polygons_file)
 
 #Generate sample_configurations
-sample_configurations = rigid_body.sample_configuration_collision_free(3)
+sample_configurations = rigid_body.sample_configuration_collision_free(5)
 
 for sample_configuration in sample_configurations:
     rigid_body.plot_configuration(sample_configuration)
-    
     
 plt.show()

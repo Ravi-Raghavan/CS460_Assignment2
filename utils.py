@@ -80,12 +80,13 @@ class RigidBody:
         #set title for axis
         ax.set_title('2D Rigid Body Simulation', fontsize = 12)
         
-        #Load Polygon Obstacle Data
-        self.polygonal_obstacles = np.load(file, allow_pickle= True)
+        #Load Polygon Obstacle Data if the file has a value
+        if file != None:
+            self.polygonal_obstacles = np.load(file, allow_pickle= True)
 
-        #Plot polygons from the npy file on the grid
-        for index in range(len(self.polygonal_obstacles)):
-            self.ax.fill([vertex[0] for vertex in self.polygonal_obstacles[index]], [vertex[1] for vertex in self.polygonal_obstacles[index]], alpha=.25, fc='white', ec='black')
+            #Plot polygons from the npy file on the grid
+            for index in range(len(self.polygonal_obstacles)):
+                self.ax.fill([vertex[0] for vertex in self.polygonal_obstacles[index]], [vertex[1] for vertex in self.polygonal_obstacles[index]], alpha=.25, fc='white', ec='black')
 
     #Returns True if rigid body is on boundary of discrete grid environment, Else returns False
     def is_rigid_body_on_boundary(self, rigid_body):
@@ -130,7 +131,7 @@ class RigidBody:
         return sampled_configurations
     
     #Function responsible for plotting a configuration
-    def plot_configuration(self, configuration):
+    def plot_configuration(self, configuration, color = 'r'):
         #Construct Rigid Body in the workspace
         w = 0.2
         h = 0.1
@@ -149,11 +150,32 @@ class RigidBody:
         #Calculate final workspace coordinates
         rigid_body = ((transformation_matrix @ rigid_body).T)[:, :-1]
         
-        rectangle_patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
+        rectangle_patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = color, edgecolor = color)
         self.ax.add_patch(rectangle_patch)
 
         # Plot centroid of rectangle
         body_centroid = self.ax.plot(configuration[0],configuration[1], marker='o', markersize=3, color="green")
+    
+    #Generate a Rigid Body from the Configuration Information
+    def generate_rigid_body_from_configuration(self, configuration):
+        #Construct Rigid Body in the workspace
+        w = 0.2
+        h = 0.1
+        top_left = np.array([-1 * w/2, h/2])
+        top_right = np.array([w/2, h/2])
+        bottom_left = np.array([-1 * w/2, -1 * h/2])
+        bottom_right = np.array([w/2, -1 * h/2])
+        
+        rigid_body = np.vstack((bottom_right, top_right, top_left, bottom_left))
+        rigid_body = np.hstack((rigid_body, np.ones(shape = (rigid_body.shape[0], 1)))).T
+        
+        #Construct Rotation Matrix from configuration
+        angle = np.deg2rad(configuration[2])
+        transformation_matrix = np.array([[np.cos(angle), -1 * np.sin(angle), configuration[0]], [np.sin(angle), np.cos(angle), configuration[1]], [0, 0, 1]])
+        
+        #Calculate final workspace coordinates
+        rigid_body = ((transformation_matrix @ rigid_body).T)[:, :-1]
+        return rigid_body
     
     #Check to see if the Selected Configuration collides with other C-obstacles
     #This entails to checking to see if the Rigid Body collides with other polygons in our list or if the rigid boundary is on the boundary
@@ -164,3 +186,46 @@ class RigidBody:
                 return True
         
         return self.is_rigid_body_on_boundary(rigid_body)
+  
+#Class Representing a Rapidly Exploring Random Tree
+class RRT:
+    def __init__(self, start, goal, rigid_body = None):
+        self.start = start.flatten()
+        self.goal = goal.flatten()
+        
+        self.vertices = np.ones(shape = (1, start.shape[0]))
+        self.vertices[0] = self.start
+        
+        self.edges = np.ones(shape = (len(self.vertices), len(self.vertices)))
+        self.rigid_body = rigid_body
+        
+    #Add vertex where vertex is a C space point
+    def add_vertex(self, vertex):
+        vertex = vertex.flatten()
+        
+        closest_vertex_index = np.argmin(np.apply_along_axis(func1d = self.D, axis = 1, arr = self.vertices - vertex.reshape((1, vertex.shape[0]))))
+        closest_vertex = self.vertices[closest_vertex_index].flatten()
+                
+        #Check path from closest_vertex to vertex
+        timesteps = 5
+        new_vertex = None
+        valid_path_found = False
+        for timestep in range(1, timesteps + 1):
+            configuration = closest_vertex + ((vertex - closest_vertex) * timestep / timesteps)
+            if self.rigid_body.check_configuration_collision(self.rigid_body.generate_rigid_body_from_configuration(configuration)):
+                break
+            else:
+                new_vertex = configuration
+                valid_path_found = True
+        
+        if valid_path_found:
+            self.vertices = np.append(self.vertices, new_vertex.reshape((1, new_vertex.shape[0])), axis = 0)
+            self.edges = np.vstack((self.edges, np.zeros(shape = (1, self.edges.shape[1]))))
+            self.edges = np.hstack((self.edges, np.zeros(shape = (self.edges.shape[0], 1))))
+
+            self.edges[closest_vertex_index, -1] = 1
+            self.edges[-1, closest_vertex_index] = 1    
+    
+    def D(self, point):
+        point = point.flatten()
+        return 0.7 * np.linalg.norm(point[:-1]) + 0.3 * np.deg2rad(np.abs(point[-1]))
