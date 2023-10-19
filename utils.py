@@ -1,4 +1,4 @@
-### Utility Functions
+### In this file, I defined utility functions for collision checking, Rigid Body for Problem 2, RRT and PRM for Problem 2
 import numpy as np 
 import matplotlib.pyplot as plt
 import matplotlib
