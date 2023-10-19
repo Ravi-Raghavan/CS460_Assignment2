@@ -1,6 +1,6 @@
 ### Problem 2: Motion Planning for a Rigid Body
 ## 2.1: Sampling random collision-free configurations
-from utils import *
+from utils_p2 import *
 
 f,ax = plt.subplots(dpi = 100)
 ax.set_aspect("equal")
