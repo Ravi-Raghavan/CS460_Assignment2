@@ -7,7 +7,7 @@ ax.set_aspect("equal")
 
 def D(point):
     point = point.flatten()
-    return 0.7 * np.linalg.norm(point[:-1]) + 0.3 * np.deg2rad(np.abs(point[-1]))
+    return 0.7 * np.linalg.norm(point[:-1]) + 0.3 * np.abs(np.deg2rad(np.abs(point[-1])))
 
 rigid_polygons_file = "rigid_polygons.npy"
 rigid_configs_file = "rigid_configs.npy"

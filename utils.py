@@ -2,6 +2,7 @@
 import numpy as np 
 import matplotlib.pyplot as plt
 import matplotlib
+import heapq
 
 #given a polygon as numpy array, get its edges as an array
 #CONFIRMED WORKS
@@ -228,7 +229,7 @@ class RRT:
     
     def D(self, point):
         point = point.flatten()
-        return 0.7 * np.linalg.norm(point[:-1]) + 0.3 * np.deg2rad(np.abs(point[-1]))
+        return 0.7 * np.linalg.norm(point[:-1]) + 0.3 * np.abs(np.deg2rad(np.abs(point[-1])))
 
 
 #Class Representing Probabilistic Road Map
@@ -237,6 +238,7 @@ class PRM:
         self.rigid_body = rigid_body
         self.vertices = rigid_body.sample_configuration_collision_free(N)
         self.edges = np.zeros(shape = (N, N))
+        self.compute_edges()
         
     def compute_edges(self):
         k = 3
@@ -282,12 +284,70 @@ class PRM:
             for neighbor_index in neighbor_indices:
                 if self.is_edge_valid(target_configuration, self.vertices[neighbor_index]):
                     self.vertices = np.vstack((self.vertices, target_configuration.reshape((1, -1))))
+                    self.edges = np.vstack((self.edges, np.zeros(shape = (1, self.edges.shape[1]))))
+                    self.edges = np.hstack((self.edges, np.zeros(shape = (self.edges.shape[0], 1))))
+                    
                     self.edges[-1, neighbor_index] = 1
                     self.edges[neighbor_index, -1] = 1
                     break
         
         #RUN SEARCH ALGORITHM HERE
+        return self.A_star(start, goal)
+     
+    #A Star Search Algorithm.          
+    def A_star(self, start, goal):
+        start_index, goal_index = len(self.vertices) - 2, len(self.vertices) - 1        
+        fringe = [(0 + self.H(start, goal), start, start_index)]
+        heapq.heapify(fringe)
+
+        in_fringe = np.zeros(shape = (len(self.vertices),))
+        in_fringe[start_index] = 1
+        
+        closed = np.zeros(shape = (len(self.vertices),))
+        goal_cost = None
+        
+        while len(fringe) > 0:
+            node = heapq.heappop(fringe) #pop heap
+            closed[node[2]] = 1 #Mark node as closed
+            in_fringe[node[2]] = 0 #Mark node as out of fringe
             
+            #If we have reached goal, we are done!
+            if node[2] == goal_index:
+                goal_cost = node[0]
+                break
+            
+            G_value_node = node[0] - self.H(node[1], goal)
+            
+            #Iterate through edges of node to find children to add to fringe
+            for child_index in range(len(self.vertices)):
+                if self.edges[node[2]][child_index] == 0 or closed[child_index] == 1:
+                    continue
+                
+                child_point = self.vertices[child_index]
+                
+                if in_fringe[child_index] == 1:
+                    fringe = list(fringe)
+                    for i, child_node in enumerate(fringe):
+                        if child_node[2] == child_index:
+                            new_G_value = G_value_node + self.D(child_point - node[1])
+                            child_H_value = self.H(child_point, goal)
+                            if new_G_value +  child_H_value < child_node[0]:
+                                fringe[i] = (new_G_value + child_H_value, child_point, child_index)
+                    
+                    heapq.heapify(fringe)                
+            
+                else:
+                    heapq.heappush(fringe, (G_value_node + self.D(child_point - node[1]) + self.H(child_point, goal), child_point, child_index))
+                    in_fringe[child_index] = 1
+        
+        return goal_cost
+        
+    #Heuristic Function for a Node in Configuration Space
+    def H(self, node, goal):
+        point = goal - node
+        return self.D(point)
+    
+    #Distance Function in Configuration Space
     def D(self, point):
         point = point.flatten()
-        return 0.7 * np.linalg.norm(point[:-1]) + 0.3 * np.deg2rad(np.abs(point[-1]))
+        return 0.7 * np.linalg.norm(point[:-1]) + 0.3 * np.abs(np.deg2rad(np.abs(point[-1])))
