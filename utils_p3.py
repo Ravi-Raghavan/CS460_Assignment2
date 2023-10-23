@@ -207,6 +207,8 @@ class Car:
     
     #Plot a configuration given a configuration
     def plot_configuration(self, configuration):
+        self.rotation_points = np.vstack((self.rotation_points, self.configuration[:2]))
+        self.path.set_data(self.rotation_points.T)
         rigid_body = self.generate_rigid_body_from_configuration(configuration)
         self.patch.set_xy(rigid_body)
         self.f.canvas.draw()
