@@ -88,11 +88,16 @@ class Car:
             for index in range(len(self.polygonal_obstacles)):
                 self.ax.fill([vertex[0] for vertex in self.polygonal_obstacles[index]], [vertex[1] for vertex in self.polygonal_obstacles[index]], alpha=.25, fc='white', ec='black')
         
-        #Set up configuration and control input for car
+        #Set up dimensions for car
         self.W = 0.2
         self.H = 0.1
         self.L = 0.2
+        
+        #Initialize Configuration
         self.configuration = self.initialize_configuration()
+        print(f"Initial Configuration: {self.configuration}")
+        
+        #Set up control input
         self.control_input = np.zeros(shape = (2,))
         
         #Set up delta_t information
@@ -107,6 +112,8 @@ class Car:
         self.ax.add_patch(self.patch)
     
     #Set State
+    #Assumption: x, y are scalar values
+    #theta is a radian value
     def set_state(self, x, y, theta):
         self.configuration = np.array([x, y, theta])
     
@@ -135,10 +142,10 @@ class Car:
                 return True
         return False
 
-    #Check to see if the Selected Configuration collides with other C-obstacles
+    #Check to see if the rigid body collides with other polygons in workspace
     #This entails to checking to see if the Rigid Body collides with other polygons in our list or if the rigid boundary is on the boundary
     #Returns True if there is a collision. Else, returns False
-    def check_configuration_collision(self, rigid_body):
+    def check_rigid_body_collision(self, rigid_body):
         for polygon in self.polygonal_obstacles:
             if (check_polygon_collision(polygon, np.vstack((rigid_body, rigid_body[0])))):
                 return True
@@ -152,7 +159,7 @@ class Car:
         
         while not free:
             rigid_body = self.generate_rigid_body_from_configuration(configuration)
-            if not self.check_configuration_collision(rigid_body):
+            if not self.check_rigid_body_collision(rigid_body):
                 free = True
                 break
             
@@ -190,7 +197,6 @@ class Car:
         
         first_derivative = np.array([v * np.cos(theta), v * np.sin(theta), v * np.tan(phi)/self.L])
         self.configuration += first_derivative * self.delta_t
-        self.configuration[2] = (self.configuration[2] % (2 * np.pi)) - np.pi
     
     #Plot a configuration given a configuration
     def plot_configuration(self, configuration):
@@ -207,7 +213,7 @@ class Car:
         
         self.compute_next_configuration()
         
-        if (self.check_configuration_collision(self.generate_rigid_body_from_configuration(self.configuration))):
+        if (self.check_rigid_body_collision(self.generate_rigid_body_from_configuration(self.configuration))):
             self.configuration[0] = old_configuration[0]
             self.configuration[1] = old_configuration[1]
             self.configuration[2] = old_configuration[2]
@@ -245,7 +251,7 @@ class Car:
         
         self.compute_next_configuration()
         
-        if (self.check_configuration_collision(self.generate_rigid_body_from_configuration(self.configuration))):
+        if (self.check_rigid_body_collision(self.generate_rigid_body_from_configuration(self.configuration))):
             self.configuration[0] = old_configuration[0]
             self.configuration[1] = old_configuration[1]
             self.configuration[2] = old_configuration[2]
