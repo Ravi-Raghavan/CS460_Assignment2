@@ -111,8 +111,22 @@ class Car:
         self.configuration = np.array([x, y, theta])
     
     #Set Control Input
+    #Assumption: v is a scalar value
+    #phi is a radian value
     def set_control_input(self, v, phi):
-        self.control_input = np.array([v, np.rad2deg(phi)])
+        #Ensure v is within the bounds of [-0.5, 0.5]
+        if v < 0:
+            v = max(v, -0.5)
+        elif v > 0:
+            v = min(v, 0.5)
+        
+        #Ensure phi is between the bounds of [-pi/4, pi/4]
+        if phi < 0:
+            phi = max(phi, -1 * np.pi/4)
+        elif phi > 0:
+            phi = min(phi, np.pi/4)
+        
+        self.control_input = np.array([v, phi])
     
     #Returns True if rigid body is on boundary of discrete grid environment, Else returns False
     def is_rigid_body_on_boundary(self, rigid_body):
@@ -133,7 +147,7 @@ class Car:
     
     #Initialize the configuration of car
     def initialize_configuration(self):
-        configuration = np.array([np.random.uniform(0, 2, size = None), np.random.uniform(0, 2, size = None), np.random.uniform(0, 360, size = None)]) #randomly choose a configuration        
+        configuration = np.array([np.random.uniform(0, 2, size = None), np.random.uniform(0, 2, size = None), np.random.uniform(-1 * np.pi, np.pi, size = None)]) #randomly choose a configuration        
         free = False #determines whether the configuration is collision free
         
         while not free:
@@ -142,14 +156,14 @@ class Car:
                 free = True
                 break
             
-            configuration = np.array([np.random.uniform(0, 2, size = None), np.random.uniform(0, 2, size = None), np.random.uniform(0, 360, size = None)]) #randomly choose a configuration
+            configuration = np.array([np.random.uniform(0, 2, size = None), np.random.uniform(0, 2, size = None), np.random.uniform(-1 * np.pi, np.pi, size = None)]) #randomly choose a configuration
         
         return configuration
     
     #Given a configuration, map the body to the workspace
     def generate_rigid_body_from_configuration(self, configuration):
         x, y = configuration[0], configuration[1]
-        theta = np.deg2rad(configuration[2])
+        theta = configuration[2]
 
         w, h = self.W, self.H
         L = self.L
@@ -174,13 +188,8 @@ class Car:
         v, phi = self.control_input[0], self.control_input[1]
         theta = self.configuration[2]
         
-        first_derivative = np.array([v * np.cos(np.deg2rad(theta)), v * np.sin(np.deg2rad(theta)), v * np.tan(np.deg2rad(phi))/self.L])
+        first_derivative = np.array([v * np.cos(theta), v * np.sin(theta), v * np.tan(phi)/self.L])
         self.configuration += first_derivative * self.delta_t
-        
-        #Reformat theta
-        self.configuration[2] = np.rad2deg(np.deg2rad(theta)  + (first_derivative * self.delta_t)[2])
-        self.configuration[2] = self.configuration[2] + 360 if self.configuration[2] < 0 else self.configuration[2]
-        self.configuration[2] = self.configuration[2] % 360
     
     #Plot a configuration given a configuration
     def plot_configuration(self, configuration):
@@ -224,9 +233,9 @@ class Car:
             self.control_input[0] = min(self.control_input[0], 0.5)
         
         if self.control_input[1] < 0:
-            self.control_input[1] = np.rad2deg(max(np.deg2rad(self.control_input[1]), -1 * np.pi/4))
+            self.control_input[1] = max(self.control_input[1], -1 * np.pi/4)
         elif self.control_input[1] > 0:
-            self.control_input[1] = np.rad2deg(min(np.deg2rad(self.control_input[1]), np.pi/4))
+            self.control_input[1] = min(self.control_input[1], 1 * np.pi/4)
         
         old_configuration = np.zeros(shape = self.configuration.shape)
         old_configuration[0] = self.configuration[0]
