@@ -2,6 +2,7 @@
 import numpy as np 
 import matplotlib
 from matplotlib import pyplot as plt
+from matplotlib.lines import Line2D
 
 #given a polygon as numpy array, get its edges as an array
 #CONFIRMED WORKS
@@ -93,9 +94,15 @@ class Car:
         self.H = 0.1
         self.L = 0.2
         
-        #Initialize Configuration
+        #Initialize Configuration and rotation_point
         self.configuration = self.initialize_configuration()
-        print(f"Initial Configuration: {self.configuration}")
+        self.rotation_points = np.empty(shape = (0, 2))
+        self.rotation_points = np.vstack((self.rotation_points, self.configuration[:2]))
+        print(f"Initial Configuration: {self.configuration} and Rotation Point of {self.rotation_points[0]}")
+        
+        #Initialize Path
+        self.path = Line2D(self.rotation_points[:, 0].flatten(), self.rotation_points[:, 1].flatten())
+        ax.add_line(self.path)
         
         #Set up control input
         self.control_input = np.zeros(shape = (2,))
@@ -217,11 +224,14 @@ class Car:
             self.configuration[0] = old_configuration[0]
             self.configuration[1] = old_configuration[1]
             self.configuration[2] = old_configuration[2]
+                
+        self.rotation_points = np.vstack((self.rotation_points, self.configuration[:2]))
+        self.path.set_data(self.rotation_points.T)
         
         rigid_body = self.generate_rigid_body_from_configuration(self.configuration)
         self.patch.set_xy(rigid_body)
         print(f"Old Configuration: {old_configuration}, New Configuration: {self.configuration}, Control Input: {self.control_input}")
-        return self.patch,
+        return self.patch, self.path
         
     # Event handler to change the rotation angle
     def keyboard_event_handler(self, event):

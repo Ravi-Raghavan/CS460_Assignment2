@@ -20,5 +20,5 @@ if (control_values == None or len(control_values) != 2):
 v, phi = control_values
 car.set_control_input(v, phi)
 
-ani = FuncAnimation(f, car.animation_update_configuration, frames=range(1, 500), blit=True, interval=10)
+ani = FuncAnimation(f, car.animation_update_configuration, frames=range(1, 500), blit = True, interval=10)
 plt.show()
