@@ -198,7 +198,7 @@ class Car:
         self.f.canvas.draw()
     
     #Update configuration at next time step
-    def update_configuration(self, frame):
+    def animation_update_configuration(self, frame):
         old_configuration = np.zeros(shape = self.configuration.shape)
         old_configuration[0] = self.configuration[0]
         old_configuration[1] = self.configuration[1]
