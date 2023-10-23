@@ -65,9 +65,8 @@ def check_polygon_collision(poly1, poly2):
     if (check_bounding_box_collision(bounding_boxes[0], bounding_boxes[1])):
         return SAT(poly1, poly2)
     
-    
 #Python Class for 2D Rigid Body
-class RigidBody:
+class Car:
     def __init__(self, f, ax, file):
         #Store figure and axes as instance variables
         self.f = f
@@ -81,11 +80,13 @@ class RigidBody:
         ax.set_title('Car Simulation', fontsize = 12)
         
         #Load Polygon Data
-        self.polygonal_obstacles = np.load(file, allow_pickle= True)
+        self.polygonal_obstacles = np.empty(shape = (0,0))
+        if file != None:
+            self.polygonal_obstacles = np.load(file, allow_pickle= True)
 
-        #Plot polygons from the npy file
-        for index in range(len(self.polygonal_obstacles)):
-            self.ax.fill([vertex[0] for vertex in self.polygonal_obstacles[index]], [vertex[1] for vertex in self.polygonal_obstacles[index]], alpha=.25, fc='white', ec='black')
+            #Plot polygons from the npy file
+            for index in range(len(self.polygonal_obstacles)):
+                self.ax.fill([vertex[0] for vertex in self.polygonal_obstacles[index]], [vertex[1] for vertex in self.polygonal_obstacles[index]], alpha=.25, fc='white', ec='black')
         
         #Set up configuration and control input for car
         self.W = 0.2
@@ -95,7 +96,7 @@ class RigidBody:
         self.control_input = np.zeros(shape = (2,))
         
         #Set up delta_t information
-        self.delta_t = 0.01
+        self.delta_t = 0.001
         
         #Register Keyboard Handler
         self.f.canvas.mpl_connect('key_press_event', self.keyboard_event_handler)
@@ -104,7 +105,14 @@ class RigidBody:
         rigid_body = self.generate_rigid_body_from_configuration(self.configuration)
         self.patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
         self.ax.add_patch(self.patch)
-        
+    
+    #Set State
+    def set_state(self, x, y, theta):
+        self.configuration = np.array([x, y, theta])
+    
+    #Set Control Input
+    def set_control_input(self, v, phi):
+        self.control_input = np.array([v, np.rad2deg(phi)])
     
     #Returns True if rigid body is on boundary of discrete grid environment, Else returns False
     def is_rigid_body_on_boundary(self, rigid_body):
@@ -123,6 +131,7 @@ class RigidBody:
         
         return self.is_rigid_body_on_boundary(rigid_body)
     
+    #Initialize the configuration of car
     def initialize_configuration(self):
         configuration = np.array([np.random.uniform(0, 2, size = None), np.random.uniform(0, 2, size = None), np.random.uniform(0, 360, size = None)]) #randomly choose a configuration        
         free = False #determines whether the configuration is collision free
@@ -137,6 +146,7 @@ class RigidBody:
         
         return configuration
     
+    #Given a configuration, map the body to the workspace
     def generate_rigid_body_from_configuration(self, configuration):
         x, y = configuration[0], configuration[1]
         theta = np.deg2rad(configuration[2])
@@ -177,6 +187,25 @@ class RigidBody:
         rigid_body = self.generate_rigid_body_from_configuration(configuration)
         self.patch.set_xy(rigid_body)
         self.f.canvas.draw()
+    
+    #Update configuration at next time step
+    def update_configuration(self, frame):
+        old_configuration = np.zeros(shape = self.configuration.shape)
+        old_configuration[0] = self.configuration[0]
+        old_configuration[1] = self.configuration[1]
+        old_configuration[2] = self.configuration[2]
+        
+        self.compute_next_configuration()
+        
+        if (self.check_configuration_collision(self.generate_rigid_body_from_configuration(self.configuration))):
+            self.configuration[0] = old_configuration[0]
+            self.configuration[1] = old_configuration[1]
+            self.configuration[2] = old_configuration[2]
+        
+        rigid_body = self.generate_rigid_body_from_configuration(self.configuration)
+        self.patch.set_xy(rigid_body)
+        print(f"Old Configuration: {old_configuration}, New Configuration: {self.configuration}, Control Input: {self.control_input}")
+        return self.patch,
         
     # Event handler to change the rotation angle
     def keyboard_event_handler(self, event):
@@ -195,12 +224,23 @@ class RigidBody:
             self.control_input[0] = min(self.control_input[0], 0.5)
         
         if self.control_input[1] < 0:
-            self.control_input[1] = max(self.control_input[1], np.rad2deg(-1 * np.pi/4))
+            self.control_input[1] = np.rad2deg(max(np.deg2rad(self.control_input[1]), -1 * np.pi/4))
         elif self.control_input[1] > 0:
-            self.control_input[1] = min(self.control_input[1], np.rad2deg(np.pi/4))
+            self.control_input[1] = np.rad2deg(min(np.deg2rad(self.control_input[1]), np.pi/4))
+        
+        old_configuration = np.zeros(shape = self.configuration.shape)
+        old_configuration[0] = self.configuration[0]
+        old_configuration[1] = self.configuration[1]
+        old_configuration[2] = self.configuration[2]
         
         self.compute_next_configuration()
+        
+        if (self.check_configuration_collision(self.generate_rigid_body_from_configuration(self.configuration))):
+            self.configuration[0] = old_configuration[0]
+            self.configuration[1] = old_configuration[1]
+            self.configuration[2] = old_configuration[2]
+        
         self.plot_configuration(self.configuration)
-        print(f"New Configuration: {self.configuration}, Control Input: {self.control_input}")
+        print(f"Old Configuration: {old_configuration}, New Configuration: {self.configuration}, Control Input: {self.control_input}")
     
     
