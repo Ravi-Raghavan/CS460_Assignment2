@@ -190,6 +190,7 @@ class Car:
         
         first_derivative = np.array([v * np.cos(theta), v * np.sin(theta), v * np.tan(phi)/self.L])
         self.configuration += first_derivative * self.delta_t
+        self.configuration[2] = (self.configuration[2] % (2 * np.pi)) - np.pi
     
     #Plot a configuration given a configuration
     def plot_configuration(self, configuration):
