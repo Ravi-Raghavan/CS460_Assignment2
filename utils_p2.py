@@ -82,6 +82,7 @@ class RigidBody:
         ax.set_title('2D Rigid Body Simulation', fontsize = 12)
         
         #Load Polygon Obstacle Data if the file has a value
+        self.polygonal_obstacles = np.empty(shape = (0,0))
         if file != None:
             self.polygonal_obstacles = np.load(file, allow_pickle= True)
 
@@ -125,7 +126,7 @@ class RigidBody:
             #Calculate final workspace coordinates
             rigid_body = ((transformation_matrix @ rigid_body).T)[:, :-1]
             
-            if (not self.check_configuration_collision(rigid_body)):
+            if (not self.check_rigid_body_collision(rigid_body)):
                 P = P + 1
                 sampled_configurations.append(configuration)
         
@@ -178,10 +179,10 @@ class RigidBody:
         rigid_body = ((transformation_matrix @ rigid_body).T)[:, :-1]
         return rigid_body
     
-    #Check to see if the Selected Configuration collides with other C-obstacles
+    #Check to see if the rigid body collides with other polygons in workspace
     #This entails to checking to see if the Rigid Body collides with other polygons in our list or if the rigid boundary is on the boundary
     #Returns True if there is a collision. Else, returns False
-    def check_configuration_collision(self, rigid_body):
+    def check_rigid_body_collision(self, rigid_body):
         for polygon in self.polygonal_obstacles:
             if (check_polygon_collision(polygon, np.vstack((rigid_body, rigid_body[0])))):
                 return True
@@ -190,30 +191,27 @@ class RigidBody:
   
 #Class Representing a Rapidly Exploring Random Tree
 class RRT:
-    def __init__(self, start, goal, rigid_body = None):
+    def __init__(self, start, goal, rigid_body: RigidBody):
         self.start = start.flatten()
         self.goal = goal.flatten()
-        
         self.vertices = np.ones(shape = (1, start.shape[0]))
         self.vertices[0] = self.start
-        
         self.edges = np.zeros(shape = (len(self.vertices), len(self.vertices)))
         self.rigid_body = rigid_body
         
     #Add vertex where vertex is a C space point
     def add_vertex(self, vertex):
         vertex = vertex.flatten()
-        
         closest_vertex_index = np.argmin(np.apply_along_axis(func1d = self.D, axis = 1, arr = self.vertices - vertex.reshape((1, vertex.shape[0]))))
         closest_vertex = self.vertices[closest_vertex_index].flatten()
-                
+        
         #Check path from closest_vertex to vertex
         timesteps = 5
         new_vertex = None
         valid_path_found = False
         for timestep in range(1, timesteps + 1):
             configuration = closest_vertex + ((vertex - closest_vertex) * timestep / timesteps)
-            if self.rigid_body.check_configuration_collision(self.rigid_body.generate_rigid_body_from_configuration(configuration)):
+            if self.rigid_body.check_rigid_body_collision(self.rigid_body.generate_rigid_body_from_configuration(configuration)):
                 break
             else:
                 new_vertex = configuration
@@ -223,7 +221,6 @@ class RRT:
             self.vertices = np.append(self.vertices, new_vertex.reshape((1, new_vertex.shape[0])), axis = 0)
             self.edges = np.vstack((self.edges, np.zeros(shape = (1, self.edges.shape[1]))))
             self.edges = np.hstack((self.edges, np.zeros(shape = (self.edges.shape[0], 1))))
-
             self.edges[closest_vertex_index, -1] = 1
             self.edges[-1, closest_vertex_index] = 1    
     
@@ -234,7 +231,7 @@ class RRT:
 
 #Class Representing Probabilistic Road Map
 class PRM:
-    def __init__(self, N, rigid_body = None):        
+    def __init__(self, N, rigid_body : RigidBody):        
         self.rigid_body = rigid_body
         self.vertices = rigid_body.sample_configuration_collision_free(N)
         self.edges = np.zeros(shape = (N, N))
@@ -244,17 +241,15 @@ class PRM:
         k = 3
         for index in range(len(self.vertices)):
             target_configuration = self.vertices[index].flatten()
-            configurations = self.vertices
+            configurations = np.delete(self.vertices, index, axis=0)
             neighbor_distances = np.apply_along_axis(func1d = self.D, axis = 1, arr = configurations - target_configuration)
             neighbor_indices = np.delete(np.argsort(neighbor_distances), index) [:k]
-            
             for neighbor_index in neighbor_indices:
                 if self.is_edge_valid(target_configuration, self.vertices[neighbor_index]):
                     self.edges[index, neighbor_index] = 1
                     self.edges[neighbor_index, index] = 1
                     break
         
-    
     #Tell if Edge is valid based on collision checking in workspace
     def is_edge_valid(self, vertexA, vertexB):
         vertexA = vertexA.flatten()
@@ -266,7 +261,7 @@ class PRM:
         
         for timestep in range(1, timesteps + 1):
             configuration = vertexA + ((vertexB - vertexA) * timestep / timesteps)
-            if self.rigid_body.check_configuration_collision(self.rigid_body.generate_rigid_body_from_configuration(configuration)):
+            if self.rigid_body.check_rigid_body_collision(self.rigid_body.generate_rigid_body_from_configuration(configuration)):
                 is_valid_path = False
                 break
         
@@ -286,7 +281,6 @@ class PRM:
                     self.vertices = np.vstack((self.vertices, target_configuration.reshape((1, -1))))
                     self.edges = np.vstack((self.edges, np.zeros(shape = (1, self.edges.shape[1]))))
                     self.edges = np.hstack((self.edges, np.zeros(shape = (self.edges.shape[0], 1))))
-                    
                     self.edges[-1, neighbor_index] = 1
                     self.edges[neighbor_index, -1] = 1
                     break
@@ -302,7 +296,6 @@ class PRM:
 
         in_fringe = np.zeros(shape = (len(self.vertices),))
         in_fringe[start_index] = 1
-        
         closed = np.zeros(shape = (len(self.vertices),))
         goal_cost = None
         
