@@ -96,36 +96,31 @@ class RigidBody:
             if vertex[0] <= 0 or vertex[0] >= 2 or vertex[1] <= 0 or vertex[1] >= 2:
                 return True
         return False
+    
+    #Check to see if the rigid body collides with other polygons in workspace or collides with the boundary
+    #This entails to checking to see if the Rigid Body collides with other polygons in our list or if the rigid boundary is on the boundary
+    #Returns True if there is a collision. Else, returns False
+    def check_rigid_body_collision(self, rigid_body):
+        for polygon in self.polygonal_obstacles:
+            if (check_polygon_collision(polygon, np.vstack((rigid_body, rigid_body[0])))):
+                return True
+        
+        return self.is_rigid_body_on_boundary(rigid_body)
         
     #Function responsible for sampling N random collision-free configurations points
     def sample_configuration_collision_free(self, N):
         #Sample a configuration, uniform at random 
         #Configuration is of the form [x, y, theta] where (x, y) is the location of the geometric center of the body and theta is the orientation
         sampled_configurations = []
-        
         P = 0
         while P < N:
             #Sample Configuration
-            configuration = np.array([np.random.uniform(0, 2), np.random.uniform(0, 2), np.random.uniform(0, 360)])
+            configuration = np.array([np.random.uniform(0, 2), np.random.uniform(0, 2), np.random.uniform(-1 * np.pi, np.pi)])
             
-            #Construct Rigid Body in the workspace
-            w = 0.2
-            h = 0.1
-            top_left = np.array([-1 * w/2, h/2])
-            top_right = np.array([w/2, h/2])
-            bottom_left = np.array([-1 * w/2, -1 * h/2])
-            bottom_right = np.array([w/2, -1 * h/2])
+            #Generate Rigid Body from Configuration            
+            rigid_body = self.generate_rigid_body_from_configuration(configuration)
             
-            rigid_body = np.vstack((bottom_right, top_right, top_left, bottom_left))
-            rigid_body = np.hstack((rigid_body, np.ones(shape = (rigid_body.shape[0], 1)))).T
-            
-            #Construct Rotation Matrix from configuration
-            angle = np.deg2rad(configuration[2])
-            transformation_matrix = np.array([[np.cos(angle), -1 * np.sin(angle), configuration[0]], [np.sin(angle), np.cos(angle), configuration[1]], [0, 0, 1]])
-            
-            #Calculate final workspace coordinates
-            rigid_body = ((transformation_matrix @ rigid_body).T)[:, :-1]
-            
+            #If the rigid body does not collide with anything in the workspace, we have sampled a valid configuration in free C-space
             if (not self.check_rigid_body_collision(rigid_body)):
                 P = P + 1
                 sampled_configurations.append(configuration)
@@ -134,29 +129,13 @@ class RigidBody:
     
     #Function responsible for plotting a configuration
     def plot_configuration(self, configuration, color = 'r'):
-        #Construct Rigid Body in the workspace
-        w = 0.2
-        h = 0.1
-        top_left = np.array([-1 * w/2, h/2])
-        top_right = np.array([w/2, h/2])
-        bottom_left = np.array([-1 * w/2, -1 * h/2])
-        bottom_right = np.array([w/2, -1 * h/2])
-        
-        rigid_body = np.vstack((bottom_right, top_right, top_left, bottom_left))
-        rigid_body = np.hstack((rigid_body, np.ones(shape = (rigid_body.shape[0], 1)))).T
-        
-        #Construct Rotation Matrix from configuration
-        angle = np.deg2rad(configuration[2])
-        transformation_matrix = np.array([[np.cos(angle), -1 * np.sin(angle), configuration[0]], [np.sin(angle), np.cos(angle), configuration[1]], [0, 0, 1]])
-        
-        #Calculate final workspace coordinates
-        rigid_body = ((transformation_matrix @ rigid_body).T)[:, :-1]
-        
+        #Generate Rigid Body from Configuration and Plot in Workspace        
+        rigid_body = self.generate_rigid_body_from_configuration(configuration)
         rectangle_patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = color, edgecolor = color)
         self.ax.add_patch(rectangle_patch)
 
-        # Plot centroid of rectangle
-        body_centroid = self.ax.plot(configuration[0],configuration[1], marker='o', markersize=3, color="green")
+        # Plot Centroid of rectangle
+        body_centroid = self.ax.plot(configuration[0], configuration[1], marker='o', markersize=3, color="green")
     
     #Generate a Rigid Body from the Configuration Information
     def generate_rigid_body_from_configuration(self, configuration):
@@ -172,22 +151,12 @@ class RigidBody:
         rigid_body = np.hstack((rigid_body, np.ones(shape = (rigid_body.shape[0], 1)))).T
         
         #Construct Rotation Matrix from configuration
-        angle = np.deg2rad(configuration[2])
+        angle = configuration[2]
         transformation_matrix = np.array([[np.cos(angle), -1 * np.sin(angle), configuration[0]], [np.sin(angle), np.cos(angle), configuration[1]], [0, 0, 1]])
         
         #Calculate final workspace coordinates
         rigid_body = ((transformation_matrix @ rigid_body).T)[:, :-1]
         return rigid_body
-    
-    #Check to see if the rigid body collides with other polygons in workspace
-    #This entails to checking to see if the Rigid Body collides with other polygons in our list or if the rigid boundary is on the boundary
-    #Returns True if there is a collision. Else, returns False
-    def check_rigid_body_collision(self, rigid_body):
-        for polygon in self.polygonal_obstacles:
-            if (check_polygon_collision(polygon, np.vstack((rigid_body, rigid_body[0])))):
-                return True
-        
-        return self.is_rigid_body_on_boundary(rigid_body)
   
 #Class Representing a Rapidly Exploring Random Tree
 class RRT:
