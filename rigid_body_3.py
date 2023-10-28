@@ -2,19 +2,25 @@
 ## 2.3: Interpolation along the straight line in the C-space
 from utils_p2 import *
 
+import argparse
+from matplotlib.animation import FuncAnimation
+import matplotlib.pyplot as plt
+import numpy as np
+
+#Set up Plot Information
 f,ax = plt.subplots(dpi = 100)
 ax.set_aspect("equal")
 
-start = np.array([0.5, 0.5, 0])
-goal = np.array([1.2, 1.0, 28.6])
+#Load in map of rigid polygons
+parser = argparse.ArgumentParser(description="Receive Command Line Arguments for Interpolation Along Straight Line Problem")
+parser.add_argument("--start", nargs = 3, type = float, help = "Start Configuration")
+parser.add_argument("--goal", nargs = 3, type = float, help = "Goal Configuration")
+args = parser.parse_args()
 
+start = np.array([args.start[0], args.start[1], args.start[2]])
+goal = np.array([args.goal[0], args.goal[1], args.goal[2]])
 timesteps = 5
 
-rigid_body = RigidBody(f, ax, None)
-rigid_body.plot_configuration(start, color = "red")
-
-for timestep in range(1, timesteps + 1):
-    configuration = start + ((goal - start) * timestep / timesteps)
-    rigid_body.plot_configuration(configuration, color = "red")
-
+rigid_body = RigidBody(f, ax, None, start, goal, timesteps)
+ani = FuncAnimation(f, rigid_body.update_animation_configuration, frames=range(0, timesteps + 1), blit = True, interval=800)
 plt.show()

@@ -1,6 +1,7 @@
 ### In this file, I defined utility functions for collision checking, Rigid Body for Problem 2, RRT and PRM for Problem 2
 import numpy as np 
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 import matplotlib
 import heapq
 
@@ -69,7 +70,7 @@ def check_polygon_collision(poly1, poly2):
 # Python Class For 2D Rigid Body
 class RigidBody:
     #Responsible for loading up environment with grid-discretization and polygonal obstacles
-    def __init__(self, f, ax, file):
+    def __init__(self, f, ax, file, starting_configuration = None, goal_configuration = None, timesteps = None):
         #Store figure and axes as instance variables
         self.f = f
         self.ax = ax
@@ -89,6 +90,21 @@ class RigidBody:
             #Plot polygons from the npy file on the grid
             for index in range(len(self.polygonal_obstacles)):
                 self.ax.fill([vertex[0] for vertex in self.polygonal_obstacles[index]], [vertex[1] for vertex in self.polygonal_obstacles[index]], alpha=.25, fc='white', ec='black')
+        
+        #Set a baseline animation configuration 
+        self.start_configuration = starting_configuration
+        self.goal_configuration = goal_configuration
+        self.timesteps = timesteps
+        if isinstance(self.start_configuration, np.ndarray):
+            rigid_body = self.generate_rigid_body_from_configuration(self.start_configuration)
+            self.patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
+            self.ax.add_patch(self.patch)
+            self.body_centroid = self.ax.plot(self.start_configuration[0], self.start_configuration[1], marker='o', markersize=3, color="green")
+            self.rotation_points = np.empty(shape = (0, 2))
+            self.rotation_points = np.vstack((self.rotation_points, self.start_configuration[:2]))
+            
+            self.path = Line2D(self.rotation_points[:, 0].flatten(), self.rotation_points[:, 1].flatten())
+            self.ax.add_line(self.path)
 
     #Returns True if rigid body is on boundary of discrete grid environment, Else returns False
     def is_rigid_body_on_boundary(self, rigid_body):
@@ -128,6 +144,31 @@ class RigidBody:
         return np.array(sampled_configurations)
     
     #Function responsible for plotting a configuration
+    def update_animation_configuration(self, frame):
+        configuration = self.start_configuration + ((self.goal_configuration - self.start_configuration) * frame / self.timesteps)
+        #Generate Rigid Body from Configuration and Plot in Workspace        
+        rigid_body = self.generate_rigid_body_from_configuration(configuration)  
+        
+        if hasattr(self, 'patch'):      
+            self.patch.set_xy(rigid_body)
+        else:
+            self.patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
+
+        # Plot Centroid of rectangle
+        if hasattr(self, 'body_centroid'):      
+            self.body_centroid[0].set_data([configuration[0], configuration[1]])
+            self.rotation_points = np.vstack((self.rotation_points, configuration[:2]))
+            self.path.set_data(self.rotation_points.T)
+        else:
+            self.body_centroid = self.ax.plot(configuration[0], configuration[1], marker='o', markersize=3, color="green")
+            self.rotation_points = np.empty(shape = (0, 2))
+            self.rotation_points = np.vstack((self.rotation_points, configuration[:2]))
+            self.path = Line2D(self.rotation_points[:, 0].flatten(), self.rotation_points[:, 1].flatten())
+            
+        print(f"Rotation Points: {self.rotation_points}")
+        
+        return self.patch, self.path,
+    
     def plot_configuration(self, configuration, color = 'r'):
         #Generate Rigid Body from Configuration and Plot in Workspace        
         rigid_body = self.generate_rigid_body_from_configuration(configuration)
@@ -136,7 +177,7 @@ class RigidBody:
 
         # Plot Centroid of rectangle
         body_centroid = self.ax.plot(configuration[0], configuration[1], marker='o', markersize=3, color="green")
-    
+                
     #Generate a Rigid Body from the Configuration Information
     def generate_rigid_body_from_configuration(self, configuration):
         #Construct Rigid Body in the workspace
