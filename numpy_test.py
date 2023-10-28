@@ -8,3 +8,6 @@ print(f"Modulo: {value}")
 
 arr = np.load("rigid_polygons.npy", allow_pickle = True)
 print(arr)
+
+arr = np.load("rigid_configs.npy", allow_pickle = True)
+print(arr)
