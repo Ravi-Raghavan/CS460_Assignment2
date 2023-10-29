@@ -33,7 +33,9 @@ prm = PRM(N, rigid_body)
 a_star_path_cost, a_star_path = prm.answer_query(start, goal)
 print("Path Cost: ", a_star_path_cost)
 print("PRM Path: ", a_star_path)
-print("Configurations: ", prm.vertices[a_star_path])
+
+if len(a_star_path) > 0:
+    print("Configurations: ", prm.vertices[a_star_path])
 
 #Generate Animation
 if len(a_star_path) > 0:
