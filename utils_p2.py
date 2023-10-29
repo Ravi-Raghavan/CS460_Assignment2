@@ -283,8 +283,6 @@ class RRT:
         
         #Calculate Rotational Distance
         angle = point[-1]
-        angle = angle if angle > 0 and angle < 180 else 180 - angle
-        angle = np.deg2rad(angle)
         dr = radius * np.abs(angle)
         
         return 0.7 * dt + 0.3 * dr
@@ -346,18 +344,29 @@ class PRM:
         self.edges = np.zeros(shape = (N, N))
         self.compute_edges()
         
+        #Set up Animation Stuff
+        #Animation Object
+        self.animation = None
+        
+        #Centroid Points
+        self.centroid_points = np.empty(shape = (0, 2))
+        
+        self.frame_number = 0
+        
     def compute_edges(self):
         k = 3
         for index in range(len(self.vertices)):
             target_configuration = self.vertices[index].flatten()
-            configurations = np.delete(self.vertices, index, axis=0)
+            configurations = self.vertices
+            
+            #Compute Neighbor Distances
             neighbor_distances = np.apply_along_axis(func1d = self.D, axis = 1, arr = configurations - target_configuration)
             neighbor_indices = np.delete(np.argsort(neighbor_distances), index) [:k]
+            
             for neighbor_index in neighbor_indices:
                 if self.is_edge_valid(target_configuration, self.vertices[neighbor_index]):
                     self.edges[index, neighbor_index] = 1
                     self.edges[neighbor_index, index] = 1
-                    break
         
     #Tell if Edge is valid based on collision checking in workspace
     def is_edge_valid(self, vertexA, vertexB):
@@ -365,7 +374,7 @@ class PRM:
         vertexB = vertexB.flatten()
         
         #Check path from vertexA to vertexB
-        timesteps = 5
+        timesteps = 25
         is_valid_path = True
         
         for timestep in range(1, timesteps + 1):
@@ -385,48 +394,62 @@ class PRM:
             neighbor_distances = np.apply_along_axis(func1d = self.D, axis = 1, arr = configurations - target_configuration)
             neighbor_indices = np.argsort(neighbor_distances) [:k]
             
+            self.vertices = np.vstack((self.vertices, target_configuration.reshape((1, -1))))
+            self.edges = np.vstack((self.edges, np.zeros(shape = (1, self.edges.shape[1]))))
+            self.edges = np.hstack((self.edges, np.zeros(shape = (self.edges.shape[0], 1))))
+            
             for neighbor_index in neighbor_indices:
                 if self.is_edge_valid(target_configuration, self.vertices[neighbor_index]):
-                    self.vertices = np.vstack((self.vertices, target_configuration.reshape((1, -1))))
-                    self.edges = np.vstack((self.edges, np.zeros(shape = (1, self.edges.shape[1]))))
-                    self.edges = np.hstack((self.edges, np.zeros(shape = (self.edges.shape[0], 1))))
                     self.edges[-1, neighbor_index] = 1
                     self.edges[neighbor_index, -1] = 1
-                    break
         
         #RUN SEARCH ALGORITHM HERE
-        return self.A_star(start, goal)
+        a_star_path_cost, a_star_path = self.A_star(start, goal)
+        self.prm_path = a_star_path
+        
+        #Set up centroid of rigid body
+        self.body_centroid = self.rigid_body.ax.plot(start[0], start[1], marker='o', markersize=3, color="green")
+        
+        return a_star_path_cost, a_star_path
      
     #A Star Search Algorithm.          
     def A_star(self, start, goal):
-        start_index, goal_index = len(self.vertices) - 2, len(self.vertices) - 1        
+        #Set up Fringe
+        start_index, goal_index = len(self.vertices) - 2, len(self.vertices) - 1
         fringe = [(0 + self.H(start, goal), start, start_index)]
         heapq.heapify(fringe)
 
+        #Set up lists to determine which vertices are in the fringe and which are in the closed list
         in_fringe = np.zeros(shape = (len(self.vertices),))
         in_fringe[start_index] = 1
         closed = np.zeros(shape = (len(self.vertices),))
-        goal_cost = None
+        a_star_path_cost = None
+        
+        ## Set up parents list
+        parents = np.full(shape = (len(self.vertices),), fill_value = -1)
         
         while len(fringe) > 0:
             node = heapq.heappop(fringe) #pop heap
-            closed[node[2]] = 1 #Mark node as closed
-            in_fringe[node[2]] = 0 #Mark node as out of fringe
+            
+            node_index = node[2]
+            
+            closed[node_index] = 1 #Mark node as closed
+            in_fringe[node_index] = 0 #Mark node as out of fringe
             
             #If we have reached goal, we are done!
-            if node[2] == goal_index:
-                goal_cost = node[0]
+            if node_index == goal_index:
+                a_star_path_cost = node[0]
                 break
             
+            #Calculate G Value for Node
             G_value_node = node[0] - self.H(node[1], goal)
             
             #Iterate through edges of node to find children to add to fringe
             for child_index in range(len(self.vertices)):
-                if self.edges[node[2]][child_index] == 0 or closed[child_index] == 1:
+                if self.edges[node_index][child_index] == 0 or closed[child_index] == 1:
                     continue
                 
                 child_point = self.vertices[child_index]
-                
                 if in_fringe[child_index] == 1:
                     fringe = list(fringe)
                     for i, child_node in enumerate(fringe):
@@ -435,19 +458,47 @@ class PRM:
                             child_H_value = self.H(child_point, goal)
                             if new_G_value +  child_H_value < child_node[0]:
                                 fringe[i] = (new_G_value + child_H_value, child_point, child_index)
+                                parents[child_index] = node_index
                     
-                    heapq.heapify(fringe)                
-            
+                    heapq.heapify(fringe)
                 else:
                     heapq.heappush(fringe, (G_value_node + self.D(child_point - node[1]) + self.H(child_point, goal), child_point, child_index))
                     in_fringe[child_index] = 1
+                    parents[child_index] = node_index
         
-        return goal_cost
+        current_node = goal_index
+        a_star_path = [goal_index]
+        while current_node != start_index:
+            next_index = parents[current_node]
+            if next_index == -1:
+                a_star_path = []
+                break
+            
+            a_star_path.append(next_index)
+            current_node = next_index  
+        
+        a_star_path = np.flip(np.array(a_star_path))      
+        return a_star_path_cost, a_star_path
         
     #Heuristic Function for a Node in Configuration Space
     def H(self, node, goal):
         point = goal - node
-        return self.D(point)
+        
+        #Set of diameter and radius
+        diameter = np.linalg.norm(np.array([0.1, 0.2])) #Diameter of Circle in which the rigid body is inscribed
+        radius = 0.5 * diameter #Radius of Circle in which the rigid body is inscribed
+        
+        #Flatten
+        point = point.flatten()
+        
+        #Calculate Euclidean Distance Transitionally
+        dt = np.linalg.norm(point[:-1])
+        
+        #Calculate Rotational Distance
+        angle = point[-1]
+        dr = radius * angle
+        
+        return 0.7 * dt + 0.3 * dr
     
     #define our Distance Function
     def D(self, point):
@@ -462,8 +513,26 @@ class PRM:
         
         #Calculate Rotational Distance
         angle = point[-1]
-        angle = angle if angle > 0 and angle < 180 else 180 - angle
-        angle = np.deg2rad(angle)
         dr = radius * np.abs(angle)
         
         return 0.7 * dt + 0.3 * dr
+    
+    #Function responsible for plotting a configuration
+    def update_animation_configuration(self, frame):        
+        if frame < self.frame_number:
+            self.animation.event_source.stop()
+        
+        configuration = self.vertices[self.prm_path[frame]]
+        rigid_body = self.rigid_body.generate_rigid_body_from_configuration(configuration)
+        
+        self.patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
+        self.rigid_body.ax.add_patch(self.patch)
+        
+        self.centroid_points = np.vstack((self.centroid_points, configuration[:2]))
+        self.path = Line2D(self.centroid_points[:, 0].flatten(), self.centroid_points[:, 1].flatten())
+        self.rigid_body.ax.add_line(self.path)
+        
+        self.body_centroid[0].set_data([configuration[0], configuration[1]])
+        
+        self.frame_number = frame
+        return self.patch, self.path, self.body_centroid[0]

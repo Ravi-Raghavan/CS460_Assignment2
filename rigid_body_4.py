@@ -29,7 +29,6 @@ N = 1000
 
 print("Start: ", start)
 print("Goal: ", goal)
-
 print("Map File: ", rigid_polygons_file)
 
 rrt = RRT(start, goal, rigid_body)

@@ -1,6 +1,6 @@
 ### Problem 2: Motion Planning for a Rigid Body
 ## 2.5: Implement a Probabilistic Road Map
-from utils_p2 import RigidBody, RRT
+from utils_p2 import RigidBody, PRM
 
 import argparse
 from matplotlib.animation import FuncAnimation
@@ -23,8 +23,19 @@ rigid_body = RigidBody(f, ax, rigid_polygons_file)
 start = np.array([args.start[0], args.start[1], args.start[2]])
 goal = np.array([args.goal[0], args.goal[1], args.goal[2]])
 
+print("Start: ", start)
+print("Goal: ", goal)
+print("Map File: ", rigid_polygons_file)
+
 N = 1000
 prm = PRM(N, rigid_body)
 
-path_cost = prm.answer_query(start, goal)
-print("Path Cost: ", path_cost)
+a_star_path_cost, a_star_path = prm.answer_query(start, goal)
+print("Path Cost: ", a_star_path_cost)
+print("PRM Path: ", a_star_path)
+print("Configurations: ", prm.vertices[a_star_path])
+
+#Generate Animation
+if len(a_star_path) > 0:
+    prm.animation = FuncAnimation(f, prm.update_animation_configuration, frames = range(0, a_star_path.size), blit = True, interval = 800)
+plt.show()
