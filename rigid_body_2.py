@@ -1,6 +1,6 @@
 ### Problem 2: Motion Planning for a Rigid Body
 ## 2.2: Nearest neighbors with linear search approach
-from utils_p2 import *
+from utils_p2 import RigidBody
 
 import argparse
 import matplotlib.pyplot as plt

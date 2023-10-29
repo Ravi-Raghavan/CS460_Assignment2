@@ -1,6 +1,6 @@
 ### Problem 2: Motion Planning for a Rigid Body
 ## 2.3: Interpolation along the straight line in the C-space
-from utils_p2 import *
+from utils_p2 import RigidBody
 
 import argparse
 from matplotlib.animation import FuncAnimation

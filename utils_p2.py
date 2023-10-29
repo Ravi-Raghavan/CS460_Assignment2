@@ -1,5 +1,6 @@
 ### In this file, I defined utility functions for collision checking, Rigid Body for Problem 2, RRT and PRM for Problem 2
 import numpy as np 
+from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import matplotlib
@@ -100,10 +101,10 @@ class RigidBody:
             self.patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
             self.ax.add_patch(self.patch)
             self.body_centroid = self.ax.plot(self.start_configuration[0], self.start_configuration[1], marker='o', markersize=3, color="green")
-            self.rotation_points = np.empty(shape = (0, 2))
-            self.rotation_points = np.vstack((self.rotation_points, self.start_configuration[:2]))
+            self.centroid_points = np.empty(shape = (0, 2))
+            self.centroid_points = np.vstack((self.centroid_points, self.start_configuration[:2]))
             
-            self.path = Line2D(self.rotation_points[:, 0].flatten(), self.rotation_points[:, 1].flatten())
+            self.path = Line2D(self.centroid_points[:, 0].flatten(), self.centroid_points[:, 1].flatten())
             self.ax.add_line(self.path)
 
     #Returns True if rigid body is on boundary of discrete grid environment, Else returns False
@@ -157,15 +158,15 @@ class RigidBody:
         # Plot Centroid of rectangle
         if hasattr(self, 'body_centroid'):      
             self.body_centroid[0].set_data([configuration[0], configuration[1]])
-            self.rotation_points = np.vstack((self.rotation_points, configuration[:2]))
-            self.path.set_data(self.rotation_points.T)
+            self.centroid_points = np.vstack((self.centroid_points, configuration[:2]))
+            self.path.set_data(self.centroid_points.T)
         else:
             self.body_centroid = self.ax.plot(configuration[0], configuration[1], marker='o', markersize=3, color="green")
-            self.rotation_points = np.empty(shape = (0, 2))
-            self.rotation_points = np.vstack((self.rotation_points, configuration[:2]))
-            self.path = Line2D(self.rotation_points[:, 0].flatten(), self.rotation_points[:, 1].flatten())
+            self.centroid_points = np.empty(shape = (0, 2))
+            self.centroid_points = np.vstack((self.centroid_points, configuration[:2]))
+            self.path = Line2D(self.centroid_points[:, 0].flatten(), self.centroid_points[:, 1].flatten())
             
-        print(f"Rotation Points: {self.rotation_points}")
+        print(f"Centroid Points: {self.centroid_points}")
         
         return self.patch, self.path,
     
@@ -202,21 +203,46 @@ class RigidBody:
 #Class Representing a Rapidly Exploring Random Tree
 class RRT:
     def __init__(self, start, goal, rigid_body: RigidBody):
+        #Set up start and goal nodes
         self.start = start.flatten()
         self.goal = goal.flatten()
+        
+        #Set up vertices and edges
         self.vertices = np.ones(shape = (1, start.shape[0]))
         self.vertices[0] = self.start
         self.edges = np.zeros(shape = (len(self.vertices), len(self.vertices)))
+        
+        #Set up rigid body
         self.rigid_body = rigid_body
+        
+        #Empty Dictionary to store path in tree
+        self.predecessor = {}
+        
+        #Variable telling if we have sampled goal vertex
+        self.sampled_goal = False
+        self.goal_index = None
+        
+        #Set up Animation Stuff
+        #Animation Object
+        self.animation = None
+        
+        #Centroid Points
+        self.centroid_points = np.empty(shape = (0, 2))
+        
+        #Set up centroid of rigid body
+        self.body_centroid = self.rigid_body.ax.plot(self.start[0], self.start[1], marker='o', markersize=3, color="green")
+        
+        self.frame_number = 0
         
     #Add vertex where vertex is a C space point
     def add_vertex(self, vertex):
+        #Find closest vertex on RRT
         vertex = vertex.flatten()
         closest_vertex_index = np.argmin(np.apply_along_axis(func1d = self.D, axis = 1, arr = self.vertices - vertex.reshape((1, vertex.shape[0]))))
         closest_vertex = self.vertices[closest_vertex_index].flatten()
         
         #Check path from closest_vertex to vertex
-        timesteps = 5
+        timesteps = 25
         new_vertex = None
         valid_path_found = False
         for timestep in range(1, timesteps + 1):
@@ -227,18 +253,91 @@ class RRT:
                 new_vertex = configuration
                 valid_path_found = True
         
-        if valid_path_found:
+        #Flatten if applicable
+        new_vertex = new_vertex.flatten() if isinstance(new_vertex, np.ndarray) else new_vertex
+        
+        #If we found valid path, add to graph
+        if valid_path_found:            
             self.vertices = np.append(self.vertices, new_vertex.reshape((1, new_vertex.shape[0])), axis = 0)
             self.edges = np.vstack((self.edges, np.zeros(shape = (1, self.edges.shape[1]))))
             self.edges = np.hstack((self.edges, np.zeros(shape = (self.edges.shape[0], 1))))
+            
             self.edges[closest_vertex_index, -1] = 1
-            self.edges[-1, closest_vertex_index] = 1    
+            self.edges[-1, closest_vertex_index] = 1  
+            
+            self.predecessor[len(self.vertices) - 1] = closest_vertex_index
+            if new_vertex[0] == self.goal[0] and new_vertex[1] == self.goal[1] and new_vertex[2] == self.goal[2]:
+                self.sampled_goal = True
+                self.goal_index = len(self.vertices) - 1
     
+    #define our Distance Function
     def D(self, point):
+        diameter = np.linalg.norm(np.array([0.1, 0.2])) #Diameter of Circle in which the rigid body is inscribed
+        radius = 0.5 * diameter #Radius of Circle in which the rigid body is inscribed
+        
+        #Flatten
         point = point.flatten()
-        return 0.7 * np.linalg.norm(point[:-1]) + 0.3 * np.abs(np.deg2rad(np.abs(point[-1])))
-
-
+        
+        #Calculate Euclidean Distance Transitionally
+        dt = np.linalg.norm(point[:-1])
+        
+        #Calculate Rotational Distance
+        angle = point[-1]
+        angle = angle if angle > 0 and angle < 180 else 180 - angle
+        angle = np.deg2rad(angle)
+        dr = radius * np.abs(angle)
+        
+        return 0.7 * dt + 0.3 * dr
+    
+    #Generate Path from start to goal
+    #The path are indices so its easier
+    def generate_path(self):
+        if not self.sampled_goal:
+            self.add_vertex(self.goal)
+            
+        path = [self.goal_index]
+        current_configuration = self.goal.flatten()
+        current_configuration_index = self.goal_index
+        
+        while not self.equal(current_configuration, self.start):
+            next_configuration_index = self.predecessor.get(current_configuration_index, None)
+            
+            if next_configuration_index == None: 
+                return np.empty(shape = (0,0))
+            
+            path.append(next_configuration_index)
+            current_configuration = self.vertices[next_configuration_index]
+            current_configuration_index = next_configuration_index
+        
+        path = np.flip(np.array(path))
+        self.rrt_path = path     
+        return path       
+        
+    #Return true if two configurations are equal
+    def equal(self, configurationA, configurationB):
+        configurationA, configurationB = configurationA.flatten(), configurationB.flatten()
+        return configurationA[0] == configurationB[0] and configurationA[1] == configurationB[1] and configurationA[2] == configurationB[2]
+    
+    #Function responsible for plotting a configuration
+    def update_animation_configuration(self, frame):        
+        if frame < self.frame_number:
+            self.animation.event_source.stop()
+        
+        configuration = self.vertices[self.rrt_path[frame]]
+        rigid_body = self.rigid_body.generate_rigid_body_from_configuration(configuration)
+        
+        self.patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
+        self.rigid_body.ax.add_patch(self.patch)
+        
+        self.centroid_points = np.vstack((self.centroid_points, configuration[:2]))
+        self.path = Line2D(self.centroid_points[:, 0].flatten(), self.centroid_points[:, 1].flatten())
+        self.rigid_body.ax.add_line(self.path)
+        
+        self.body_centroid[0].set_data([configuration[0], configuration[1]])
+        
+        self.frame_number = frame
+        return self.patch, self.path, self.body_centroid[0]
+        
 #Class Representing Probabilistic Road Map
 class PRM:
     def __init__(self, N, rigid_body : RigidBody):        
@@ -350,7 +449,21 @@ class PRM:
         point = goal - node
         return self.D(point)
     
-    #Distance Function in Configuration Space
+    #define our Distance Function
     def D(self, point):
+        diameter = np.linalg.norm(np.array([0.1, 0.2])) #Diameter of Circle in which the rigid body is inscribed
+        radius = 0.5 * diameter #Radius of Circle in which the rigid body is inscribed
+        
+        #Flatten
         point = point.flatten()
-        return 0.7 * np.linalg.norm(point[:-1]) + 0.3 * np.abs(np.deg2rad(np.abs(point[-1])))
+        
+        #Calculate Euclidean Distance Transitionally
+        dt = np.linalg.norm(point[:-1])
+        
+        #Calculate Rotational Distance
+        angle = point[-1]
+        angle = angle if angle > 0 and angle < 180 else 180 - angle
+        angle = np.deg2rad(angle)
+        dr = radius * np.abs(angle)
+        
+        return 0.7 * dt + 0.3 * dr
