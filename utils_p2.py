@@ -387,6 +387,7 @@ class PRM:
 
     #Shortest path from start -> goal
     def answer_query(self, start, goal):
+        print(f"Going to Answer Query for Start: {start}, Goal: {goal}")
         k = 3
         target_configurations = [start, goal]
         for target_configuration in target_configurations:
@@ -398,8 +399,11 @@ class PRM:
             self.edges = np.vstack((self.edges, np.zeros(shape = (1, self.edges.shape[1]))))
             self.edges = np.hstack((self.edges, np.zeros(shape = (self.edges.shape[0], 1))))
             
+            print(f"Number of Neighboring Indices: {len(neighbor_indices)}")
+            
             for neighbor_index in neighbor_indices:
                 if self.is_edge_valid(target_configuration, self.vertices[neighbor_index]):
+                    print("VALID EDGE")
                     self.edges[-1, neighbor_index] = 1
                     self.edges[neighbor_index, -1] = 1
         
@@ -439,6 +443,7 @@ class PRM:
             #If we have reached goal, we are done!
             if node_index == goal_index:
                 a_star_path_cost = node[0]
+                print("Found the goal Node with a cost of", a_star_path_cost)
                 break
             
             #Calculate G Value for Node
