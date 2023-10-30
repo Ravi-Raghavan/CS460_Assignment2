@@ -338,36 +338,57 @@ class RRT:
             
 #Class Representing Probabilistic Road Map
 class PRM:
-    def __init__(self, N, rigid_body : RigidBody):        
+    def __init__(self, N, rigid_body : RigidBody):
+        #Initialize       
         self.rigid_body = rigid_body
-        self.vertices = rigid_body.sample_configuration_collision_free(N)
-        self.edges = np.zeros(shape = (N, N))
-        self.compute_edges()
+        self.vertices = np.empty(shape = (0, 3))
+        self.edges = np.empty(shape = (0,0))
         
+        #Generate Roadmap
+        self.generate_roadmap(N)
+                
         #Set up Animation Stuff
         #Animation Object
         self.animation = None
         
         #Centroid Points
         self.centroid_points = np.empty(shape = (0, 2))
-        
         self.frame_number = 0
-        
-    def compute_edges(self):
-        k = 3
-        for index in range(len(self.vertices)):
-            target_configuration = self.vertices[index].flatten()
+    
+    #Generate Roadmap
+    def generate_roadmap(self, N):
+        for _ in range(N):
+            sampled_vertex = self.rigid_body.sample_configuration_collision_free(1)
+            sampled_vertex = sampled_vertex.flatten()
+            
+            if len(self.vertices) == 0:
+                self.vertices = np.append(self.vertices, sampled_vertex.reshape((1, sampled_vertex.shape[0])), axis = 0)
+                self.edges = np.vstack((self.edges, np.zeros(shape = (1, self.edges.shape[1]))))
+                self.edges = np.hstack((self.edges, np.zeros(shape = (self.edges.shape[0], 1))))
+                print(self.vertices.shape, self.edges.shape)
+                continue
+            
+            #Compute neighbor distances
+            k = 3
+            target_configuration = sampled_vertex
             configurations = self.vertices
-            
-            #Compute Neighbor Distances
             neighbor_distances = np.apply_along_axis(func1d = self.D, axis = 1, arr = configurations - target_configuration)
-            neighbor_indices = np.delete(np.argsort(neighbor_distances), index) [:k]
+            neighbor_indices = np.argsort(neighbor_distances) [:k]
             
+            #Add sampled vertex to self.vertices
+            self.vertices = np.append(self.vertices, sampled_vertex.reshape((1, sampled_vertex.shape[0])), axis = 0)
+            index = len(self.vertices) - 1
+            
+            #Expand self.edges
+            self.edges = np.vstack((self.edges, np.zeros(shape = (1, self.edges.shape[1]))))
+            self.edges = np.hstack((self.edges, np.zeros(shape = (self.edges.shape[0], 1))))
+            
+            #Try to add edges to neighbor nodes if possible
             for neighbor_index in neighbor_indices:
                 if self.is_edge_valid(target_configuration, self.vertices[neighbor_index]):
                     self.edges[index, neighbor_index] = 1
                     self.edges[neighbor_index, index] = 1
-        
+                            
     #Tell if Edge is valid based on collision checking in workspace
     def is_edge_valid(self, vertexA, vertexB):
         vertexA = vertexA.flatten()
