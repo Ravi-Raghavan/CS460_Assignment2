@@ -202,7 +202,7 @@ class RigidBody:
   
 #Class Representing a Rapidly Exploring Random Tree
 class RRT:
-    def __init__(self, start, goal, rigid_body: RigidBody):
+    def __init__(self, start, goal, rigid_body: RigidBody, animation_3D_figure, animation_3D_axis):
         #Set up start and goal nodes
         self.start = start.flatten()
         self.goal = goal.flatten()
@@ -233,6 +233,10 @@ class RRT:
         self.body_centroid = self.rigid_body.ax.plot(self.start[0], self.start[1], marker='o', markersize=3, color="green")
         
         self.frame_number = 0
+        
+        #Set up 3D Animation Information
+        self.animation_3D_figure = animation_3D_figure
+        self.animation_3D_axis = animation_3D_axis
         
     #Add vertex where vertex is a C space point
     def add_vertex(self, vertex):
@@ -335,6 +339,38 @@ class RRT:
         
         self.frame_number = frame
         return self.patch, self.path, self.body_centroid[0]
+    
+    ### Add Vertex for a 3D Animation
+    def add_3D_animation_vertex(self, vertex):
+        #Find closest vertex on RRT
+        vertex = vertex.flatten()
+        closest_vertex_index = np.argmin(np.apply_along_axis(func1d = self.D, axis = 1, arr = self.vertices - vertex.reshape((1, vertex.shape[0]))))
+        closest_vertex = self.vertices[closest_vertex_index].flatten()
+        
+        #Check path from closest_vertex to vertex
+        new_vertex = closest_vertex                
+        new_vertex = new_vertex.flatten()
+        
+        #Add to graph
+        self.vertices = np.append(self.vertices, new_vertex.reshape((1, new_vertex.shape[0])), axis = 0)
+        self.edges = np.vstack((self.edges, np.zeros(shape = (1, self.edges.shape[1]))))
+        self.edges = np.hstack((self.edges, np.zeros(shape = (self.edges.shape[0], 1))))
+        
+        self.edges[closest_vertex_index, -1] = 1
+        self.edges[-1, closest_vertex_index] = 1  
+        
+        self.predecessor[len(self.vertices) - 1] = closest_vertex_index
+        if new_vertex[0] == self.goal[0] and new_vertex[1] == self.goal[1] and new_vertex[2] == self.goal[2]:
+            self.sampled_goal = True
+            self.goal_index = len(self.vertices) - 1
+    
+    #Function Responsible for Plotting RRT Tree Growing in Space
+    def update_3D_animation_configuration(self, frame):
+        indices = np.argwhere(self.edges == 1)
+        rows = indices[:, 0].flatten()
+        cols = indices[:, 1].flatten()
+        lines = [self.animation_3D_axis.plot([self.vertices[row][0], self.vertices[col][0]], [self.vertices[row][1], self.vertices[col][1]], [self.vertices[row][2], self.vertices[col][2]], color='green')[0] for row, col in zip(rows, cols)]
+        return lines
         
 #Class Representing Probabilistic Road Map
 class PRM:
