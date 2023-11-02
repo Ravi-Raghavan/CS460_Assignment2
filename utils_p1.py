@@ -2,11 +2,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.patches import Polygon
-
+import matplotlib.collections as coll
+##############################################################################
+##################### ROBOT ARM OBJECT AND FUNCTIONS #########################
+##############################################################################
 class RobotArm(object):
-    def __init__(self, map, link_lengths, joint_angles, joint_radius=0.1, link_width=0.1):
-        self.polygons = np.load(map, allow_pickle = True)
-
+    def __init__(self, map, link_lengths, joint_angles, joint_radius=0.05, link_width=0.1):
+        if map != 'None':
+            self.polygons = np.load(map, allow_pickle = True)
         self.n_links = len(link_lengths)
 
         self.link_lengths = np.array(link_lengths)
@@ -14,11 +17,14 @@ class RobotArm(object):
         self.joint_radius = joint_radius
         self.link_width = link_width
         self.points = np.ones((self.n_links + 1, 2))
+        self.joint_boxes = []
 
-        self.fig, self.ax = plt.subplots()
+        self.fig,self.ax = plt.subplots()
         self.ax.set_aspect('equal')
         self.ax.set_xlim([0, 2])
         self.ax.set_ylim([0, 2])
+        self.pat = []
+        self.num_configs = 0
 
         self.update_points()
 
@@ -46,6 +52,17 @@ class RobotArm(object):
             self.points[i + 1][0] = new_point[0, 0]
             self.points[i + 1][1] = new_point[1, 0]
 
+        self.joint_boxes.clear()
+        for i in range(self.n_links + 1):
+            x,y = self.points[i]
+            radius = self.joint_radius
+            top_left = (x - radius, y + radius)
+            top_right = (x + radius, y + radius)
+            bottom_left = (x - radius, y - radius)
+            bottom_right = (x + radius, y - radius)
+            box = [top_right, top_left, bottom_left, bottom_right, top_right]
+            self.joint_boxes.append(np.array(box))
+
     def draw_rectangle(self, start, end):
         """Create a rectangle from start to end with a certain width."""
         direction = np.array(end) - np.array(start)
@@ -68,35 +85,46 @@ class RobotArm(object):
 
         return np.array([p1, p4, p3, p2, p1])
 
-    def plot(self):
+    def plot(self, color):
         for i in range(self.n_links):
             rectangle = self.draw_rectangle(self.points[i], self.points[i + 1])
-            self.ax.plot(rectangle[:, 0], rectangle[:, 1], 'orange')
-            self.ax.fill(rectangle[:, 0], rectangle[:, 1], 'orange') 
+            self.ax.plot(rectangle[:, 0], rectangle[:, 1], color=color)
+            self.ax.fill(rectangle[:, 0], rectangle[:, 1], color=color, alpha = 0.4) 
 
         for i in range(self.n_links + 1):
-            circle = patches.Circle(self.points[i], radius=self.joint_radius, facecolor='black', alpha = 0.7)
-            self.ax.add_patch(circle)
+            circle = patches.Circle(self.points[i], radius=self.joint_radius)
+            self.pat.append(circle)
 
+        pc = coll.PatchCollection(self.pat, facecolor=color)
+        self.ax.add_collection(pc)
+        self.num_configs += 1
         self.ax.set_xlim([0, 2])
         self.ax.set_ylim([0, 2])
-       # plt.draw()
-        plt.show()
 
     def plot_configs(self, configurations):
         for config in configurations:
             self.update_joints(config)
-            self.plot()
-            plt.pause(1)
-        plt.show()
+            color = ''
+            if self.num_configs == 0:
+                color = 'black'
+            elif self.num_configs == 1:
+                color = 'firebrick'
+            elif self.num_configs == 2:
+                color = 'olivedrab'
+            elif self.num_configs == 3:
+                color = 'steelblue'
+            else:
+                color = 'gold'
+            self.plot(color)
 
     def plot_polygons(self):
         # adds polygons to map
         for polygon in self.polygons:
-             self.ax.add_patch(Polygon(polygon, closed = True, ec = 'black',facecolor = 'grey', alpha = 0.3))
+             self.ax.add_patch(Polygon(polygon, closed = True, ec = 'black',facecolor = 'grey', alpha = 0.5))
 
-
-
+##############################################################################
+##################### COLLISION CHECKING FUNCTIONS ###########################
+##############################################################################
 def get_edges(polygon):
     V = polygon.shape[0]
     edges = [[polygon[i], polygon[i + 1]] for i in range(V - 1)]
@@ -223,13 +251,29 @@ def SAT(poly1, poly2):
         
         if (poly2_projections[-1] < poly1_projections[0] or poly2_projections[0] > poly1_projections[-1]):
             return False
-    
     return True
 
 def collides_optimized(poly1, poly2):
     bounding_boxes = [np.array([np.min(polygon, axis=0), np.max(polygon, axis=0)]) for polygon in [poly1, poly2]]
     if (check_collision(bounding_boxes[0], bounding_boxes[1])):
         return SAT(poly1, poly2)
+
+##############################################################################
+##################### ADDITIONAL FUNCTIONS ###################################
+##############################################################################
+def angle_difference(angle1, angle2):
+    # Calculate the absolute difference between the angles
+    difference = abs(angle1 - angle2)
+    
+    # Ensure the result is within the [0, 2π] range
+    while difference > 2 * np.pi:
+        difference -= 2 * np.pi
+
+    return difference
+
+def normalize_angle(angle):
+    normalized_angle = angle%(2*np.pi)
+    return normalized_angle
 
 
 

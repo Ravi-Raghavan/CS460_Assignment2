@@ -1,26 +1,32 @@
 import argparse
-import numpy as np
-from matplotlib import pyplot as plt
+from matplotlib.animation import FuncAnimation
 import utils_p1 as utl
+    
+# moves arm from start to goal configuration
+def move(arm, start,goal):
+    # calculate step size
+    distance1 = utl.angle_difference(start[0],goal[0])
+    distance2 = utl.angle_difference(start[1],goal[1])
+    step1 = distance1/20
+    step2 = distance2/20
 
-#  robot arm moves from start to goal configuration
-def move(arm, goal):
-    # keeps moving robot until it reaches goal
-    while arm.joint_angles != goal:
-        joint1 = arm.joint_angles[0]
-        joint2= arm.joint_angles[1]
+    # create animation
+    def update(frame):
+        utl.plt.cla()
+        joint1 = start[0] + frame * step1
+        joint2 = start[1] + frame * step2
 
-        if joint1 != goal[0]:
-            joint1 = joint1 + np.pi/20
+        if frame == 0:  # start configuration
+            arm.plot('lightblue')
+        elif frame == 21:  # goal configuration
+            arm.plot('thistle')
+        else:  # other configurations
+            arm.plot('slategrey')
 
-        if joint2 != goal[1]:
-            joint2 = joint2 + np.pi/20
+        arm.update_joints((joint1, joint2))
 
-        arm.update_joints((joint1,joint2))
-
-        # create animation 
-        arm.plot()
-
+    animation = FuncAnimation(arm.fig, update, frames=22, repeat=False)
+    utl.plt.show()
 
 def main():
     # parse command line arguments for arguments
@@ -34,10 +40,10 @@ def main():
     goal = args.goal
 
     # initialize robot at starting orientation
-    arm = utl.RobotArm(map, [0.3,0.15], [start[0], start[1]], joint_radius=0.05, link_width=0.1)
+    arm = utl.RobotArm('None', [0.3,0.15], [start[0], start[1]], joint_radius=0.05, link_width=0.1)
 
     # move arm from start to goal
-    move(arm, goal)
+    move(arm, start, goal)
 
 if __name__ == "__main__":
     main()
