@@ -4,7 +4,8 @@ from matplotlib.animation import FuncAnimation
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import matplotlib
-import heapq
+from queue import PriorityQueue
+
 
 #given a polygon as numpy array, get its edges as an array
 #CONFIRMED WORKS
@@ -441,10 +442,15 @@ class PRM:
      
     #A Star Search Algorithm.          
     def A_star(self, start, goal):
+        #Set up Priority Queue
+        fringe = PriorityQueue()
+        
         #Set up Fringe
         start_index, goal_index = len(self.vertices) - 2, len(self.vertices) - 1
-        fringe = [(0 + self.H(start, goal), start, start_index)]
-        heapq.heapify(fringe)
+        fringe.put(item = (0 + self.H(start, goal), (start, start_index)))
+        
+        # fringe = [(0 + self.H(start, goal), start, start_index)]
+        # heapq.heapify(fringe)
 
         #Set up lists to determine which vertices are in the fringe and which are in the closed list
         in_fringe = np.zeros(shape = (len(self.vertices),))
@@ -455,10 +461,10 @@ class PRM:
         ## Set up parents list
         parents = np.full(shape = (len(self.vertices),), fill_value = -1)
         
-        while len(fringe) > 0:
-            node = heapq.heappop(fringe) #pop heap
+        while not fringe.empty():
+            node = fringe.get()
             
-            node_index = node[2]
+            node_index = node[1][1]
             
             closed[node_index] = 1 #Mark node as closed
             in_fringe[node_index] = 0 #Mark node as out of fringe
@@ -470,7 +476,7 @@ class PRM:
                 break
             
             #Calculate G Value for Node
-            G_value_node = node[0] - self.H(node[1], goal)
+            G_value_node = node[0] - self.H(node[1][0], goal)
             
             #Iterate through edges of node to find children to add to fringe
             for child_index in range(len(self.vertices)):
@@ -479,18 +485,29 @@ class PRM:
                 
                 child_point = self.vertices[child_index]
                 if in_fringe[child_index] == 1:
-                    fringe = list(fringe)
-                    for i, child_node in enumerate(fringe):
-                        if child_node[2] == child_index:
-                            new_G_value = G_value_node + self.D(child_point - node[1])
+                    fringe_list = []
+                    
+                    #Populate fringe list with Priority Queue elements
+                    while not fringe.empty():
+                        fringe_list.append(fringe_list.get())
+                       
+                    #Update! 
+                    for i, child_node in enumerate(fringe_list):
+                        if child_node[1][1] == child_index:
+                            new_G_value = G_value_node + self.D(child_point - node[1][0])
                             child_H_value = self.H(child_point, goal)
-                            if new_G_value +  child_H_value < child_node[0]:
-                                fringe[i] = (new_G_value + child_H_value, child_point, child_index)
+                            
+                            if new_G_value +  child_H_value < child_node[0][0]:
+                                fringe_list[i] = (new_G_value + child_H_value, (child_point, child_index))
                                 parents[child_index] = node_index
                     
-                    heapq.heapify(fringe)
+                    #Convert back to heap
+                    fringe = PriorityQueue()
+                    for item in fringe_list:
+                        fringe.put(item)
+                    
                 else:
-                    heapq.heappush(fringe, (G_value_node + self.D(child_point - node[1]) + self.H(child_point, goal), child_point, child_index))
+                    fringe.put(item = (G_value_node + self.D(child_point - node[1]) + self.H(child_point, goal), (child_point, child_index)))
                     in_fringe[child_index] = 1
                     parents[child_index] = node_index
         
