@@ -448,57 +448,56 @@ class PRM:
         #Set up Fringe
         start_index, goal_index = len(self.vertices) - 2, len(self.vertices) - 1
         fringe.put(item = (0 + self.H(start, goal), (start, start_index)))
-        
-        # fringe = [(0 + self.H(start, goal), start, start_index)]
-        # heapq.heapify(fringe)
 
         #Set up lists to determine which vertices are in the fringe and which are in the closed list
         in_fringe = np.zeros(shape = (len(self.vertices),))
         in_fringe[start_index] = 1
         closed = np.zeros(shape = (len(self.vertices),))
+        
+        #Initialize variable to keep track of total optimal path cost
         a_star_path_cost = None
         
         ## Set up parents list
         parents = np.full(shape = (len(self.vertices),), fill_value = -1)
         
+        #Iterate while fringe is NOT empty
         while not fringe.empty():
-            node = fringe.get()
-            
-            node_index = node[1][1]
+            node = fringe.get() #Get Node from Fringe
+            F_value, node_configuration, node_index = node[0], node[1][0], node[1][1]
             
             closed[node_index] = 1 #Mark node as closed
             in_fringe[node_index] = 0 #Mark node as out of fringe
             
             #If we have reached goal, we are done!
             if node_index == goal_index:
-                a_star_path_cost = node[0]
+                a_star_path_cost = F_value
                 print("Found the goal Node with a cost of", a_star_path_cost)
                 break
             
             #Calculate G Value for Node
-            G_value_node = node[0] - self.H(node[1][0], goal)
+            G_value_node = F_value - self.H(node_configuration, goal)
             
             #Iterate through edges of node to find children to add to fringe
             for child_index in range(len(self.vertices)):
                 if self.edges[node_index][child_index] == 0 or closed[child_index] == 1:
                     continue
                 
-                child_point = self.vertices[child_index]
+                child_configuration = self.vertices[child_index]
                 if in_fringe[child_index] == 1:
-                    fringe_list = []
+                    fringe_list = [] #Initialize List
                     
                     #Populate fringe list with Priority Queue elements
                     while not fringe.empty():
-                        fringe_list.append(fringe_list.get())
+                        fringe_list.append(fringe.get())
                        
-                    #Update! 
-                    for i, child_node in enumerate(fringe_list):
-                        if child_node[1][1] == child_index:
-                            new_G_value = G_value_node + self.D(child_point - node[1][0])
-                            child_H_value = self.H(child_point, goal)
-                            
-                            if new_G_value +  child_H_value < child_node[0][0]:
-                                fringe_list[i] = (new_G_value + child_H_value, (child_point, child_index))
+                    #Update 
+                    for i, fringe_node in enumerate(fringe_list):
+                        fringe_node_F_value, fringe_node_configuration, fringe_node_index = fringe_node[0], fringe_node[1][0], fringe_node[1][1]
+                        if fringe_node_index == child_index:
+                            new_G_value = G_value_node + self.D(child_configuration - node_configuration)
+                            child_H_value = self.H(child_configuration, goal)
+                            if new_G_value +  child_H_value < fringe_node_F_value:
+                                fringe_list[i] = (new_G_value + child_H_value, (child_configuration, child_index))
                                 parents[child_index] = node_index
                     
                     #Convert back to heap
@@ -507,10 +506,11 @@ class PRM:
                         fringe.put(item)
                     
                 else:
-                    fringe.put(item = (G_value_node + self.D(child_point - node[1]) + self.H(child_point, goal), (child_point, child_index)))
+                    fringe.put(item = (G_value_node + self.D(child_configuration - node[1]) + self.H(child_configuration, goal), (child_configuration, child_index)))
                     in_fringe[child_index] = 1
                     parents[child_index] = node_index
         
+        #Retrieve the actual A* Path
         current_node = goal_index
         a_star_path = [goal_index]
         while current_node != start_index:
