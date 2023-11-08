@@ -12,7 +12,7 @@ ax.set_aspect("equal")
 
 #Load in map of rigid polygons
 parser = argparse.ArgumentParser(description="Receive Command Line Arguments for Nearest Neighbor Problem")
-parser.add_argument("--target", nargs = 3, type = int, help = "Target Configuration")
+parser.add_argument("--target", nargs = 3, type = float, help = "Target Configuration")
 parser.add_argument("--k", nargs = 1, type = int, help = "Target Configuration")
 parser.add_argument("--configs", nargs = 1, type = str, help = "List of Random Configurations")
 args = parser.parse_args()
@@ -40,13 +40,25 @@ def D(point):
     
     #Calculate Rotational Distance
     angle = point[-1]
-    angle = angle if angle > 0 and angle < 180 else 180 - angle
-    angle = np.deg2rad(angle)
     dr = radius * np.abs(angle)
     
     return 0.7 * dt + 0.3 * dr
 
 configurations = np.load(rigid_configs_file, allow_pickle= True)
+print(configurations)
+
+#Convert to Radians
+thetas = configurations[:, 2].flatten()
+thetas = [theta % 360 if theta >= 0 else theta % (-360) for theta in thetas]
+thetas = [theta if theta > 0 and theta < 180 else theta - 360 for theta in thetas]
+thetas = np.deg2rad(thetas)
+
+#Put them back in configurations
+configurations[:, 2] = thetas
+
+print("Updated Configurations:")
+print(configurations)
+
 A = configurations - target_configuration
 neighbor_distances = np.apply_along_axis(func1d = D, axis = 1, arr = A)
 
@@ -54,6 +66,9 @@ print(f"Shape Information for Sanity: {A.shape}, {neighbor_distances.shape}")
 print("Value of K is ", k)
 
 k_neighbor_indices = np.argsort(neighbor_distances)[:k]
+
+print(neighbor_distances[k_neighbor_indices])
+print(configurations[k_neighbor_indices])
 
 #Define Rigid Body and plot Configurations
 rigid_body = RigidBody(f, ax, None)
