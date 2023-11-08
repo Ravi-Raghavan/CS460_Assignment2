@@ -129,8 +129,98 @@ explain PRMstar and how i changed PRM
 \section{Motion Planning for a Rigid Body in 2D}
 % SECTION 2.1
 \subsection{Sampling Random Collision-Free Configurations}
+\begin{figure}[h!]
+	\includegraphics[width= 0.9 \linewidth]{P2_collision_free(1).png}
+	\centering
+	\caption{Collision-Free Sampling for Environment 1}
+	\label{P2_collision_free(1).png}
+\end{figure}
+
+\begin{figure}[h!]
+	\includegraphics[width= 0.9 \linewidth]{P2_collision_free(2).png}
+	\centering
+	\caption{Collision-Free Sampling for Environment 2}
+	\label{P2_collision_free(2).png}
+\end{figure}
+
+\newpage 
+\subsubsection{Analysis}
+For Problem 2, we know that our configuration $q$ for the 2D Rigid Body can be represented as $(x, y, \theta)$ where $(x, y)$ are the coordinates of the rigid body's geometric center and $\theta$ is the degree of rotation of the rigid body with respect to its center. 
+
+Hence, to obtain 5 samples of random collision-free configurations, I followed the following basic steps 5 times! : 
+\begin{itemize}
+    \item I sampled $x_{rand}$ uniformly from the range $(0, 2)$, I sampled $y_{rand}$ uniformly from the range $(0, 2)$, and I sampled $\theta_{rand}$ uniformly from the range $(-\pi, \pi)$
+    \item The configuration I obtained was $(x_{rand}, y_{rand}, \theta_{rand})$
+    \item To determine whether this configuration was in the Free Space of the Configuration Space, I converted the configuration to workspace coordinates and applied collision checking(same algorithms I used in Assignment 1)
+    \item If the configuration was in the Free Space of the Configuration Space, I kept it
+\end{itemize}
+
+\subsubsection{Collision Detection Review}
+To implement collision detection, my methodology can be broken down into two major portions. Let's say we are trying to detect if Polygon P and Q collide. The first thing I did was to construct bounding boxes around each polygon. Essentially, a bounding box for a polygon is akin to drawing a rectangle around the polygon that covers all its corners \newline 
+
+Once the bounding boxes are constructed, when checking for collision, the first thing I check to see is if the bounding boxes for P and Q intersect. If no intersection is detected, I simply return False to indicate that there is NO collision. \newline 
+
+However, if there is a collision detected between the bounding boxes of P and Q, I need to verify this collision. To do this verification, I use the Separating Axis Theorem(SAT). \newline 
+
+Essentially, the main principle behind the Separating Axis Theorem is as follows. If a line/axis exists such that the projections of two polygons onto this line don't overlap, then the polygons don't collide. \newline 
+
+For each edge of both polygons, I computed the normal vector to that edge. Then, I projected each polygon onto that normal vector. If there was a gap in the projections(i.e. there was no overlap in the projections), then I could conclude that there was NO intersection between the two polygons. 
+
+If there was no such gap, I would have to keep continuing this process until I found a normal vector where there was a gap in the projections of the polygons onto this vector. 
+
+At the end of the process, if I did not find any such gap of the projections onto any of the normal vectors, I could conclude that there was a collision between the polygons 
+
 % SECTION 2.2
+\newpage 
 \subsection{Nearest Neighbors with Linear Search Approach}
+\begin{figure}[h!]
+	\includegraphics[width= 0.9 \linewidth]{P2_NearestNeighbor(1).png}
+	\centering
+	\caption{Nearest Neighbors(1)}
+	\label{P2_NearestNeighbor(1).png}
+\end{figure}
+
+\underline{Program Input}: Target Configuration was $[1, 1, 0]$, number of nearest neighbors was 3, and the input list was specified by rigid$\_$configs.npy
+\newpage 
+\begin{figure}[h!]
+	\includegraphics[width= 0.9 \linewidth]{P2_NearestNeighbor(2).png}
+	\centering
+	\caption{Nearest Neighbors(2)}
+	\label{P2_NearestNeighbor(2).png}
+\end{figure}
+
+\underline{Program Input}: Target Configuration was $[0.5, 0.5, 0]$, number of nearest neighbors was 3, and the input list was specified by rigid$\_$configs.npy
+
+\newpage 
+\begin{figure}[h!]
+	\includegraphics[width= 0.9 \linewidth]{P2_NearestNeighbor(3).png}
+	\centering
+	\caption{Nearest Neighbors(3)}
+	\label{P2_NearestNeighbor(3).png}
+\end{figure}
+
+\underline{Program Input}: Target Configuration was $[0.75, 0.5, 0.2]$, number of nearest neighbors was 4, and the input list was specified by rigid$\_$configs.npy
+
+\newpage 
+\begin{figure}[h!]
+	\includegraphics[width= 0.9 \linewidth]{P2_NearestNeighbor(4).png}
+	\centering
+	\caption{Nearest Neighbors(4)}
+	\label{P2_NearestNeighbor(4).png}
+\end{figure}
+
+\underline{Program Input}: Target Configuration was $[1.5, 1.5, -0.2]$, number of nearest neighbors was 4, and the input list was specified by rigid$\_$configs.npy
+
+\newpage
+\begin{figure}[h!]
+	\includegraphics[width= 0.9 \linewidth]{P2_NearestNeighbor(5).png}
+	\centering
+	\caption{Nearest Neighbors(5)}
+	\label{P2_NearestNeighbor(5).png}
+\end{figure}
+
+\underline{Program Input}: Target Configuration was $[1.5, 0.5, -0.5]$, number of nearest neighbors was 5, and the input list was specified by rigid$\_$configs.npy
+
 % SECTION 2.3
 \subsection{Interpolation Along the Straight Line in the C-Space}
 % SECTION 2.4
