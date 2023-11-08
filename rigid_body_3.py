@@ -22,5 +22,5 @@ goal = np.array([args.goal[0], args.goal[1], args.goal[2]])
 timesteps = 5
 
 rigid_body = RigidBody(f, ax, None, start, goal, timesteps)
-ani = FuncAnimation(f, rigid_body.update_animation_configuration, frames=range(0, timesteps + 1), blit = True, interval=800)
+ani = FuncAnimation(f, rigid_body.update_animation_configuration, frames=range(0, timesteps + 1), blit = True, interval=800, repeat = False)
 plt.show()
