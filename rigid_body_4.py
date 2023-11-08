@@ -36,8 +36,9 @@ rrt = RRT(start, goal, rigid_body)
 #Finished Creating RRT
 while P < N:
     configuration = rigid_body.sample_configuration_collision_free(1)[0]    
-    rrt.add_vertex(configuration)
-    P = P + 1
+    added_successfully = rrt.add_vertex(configuration)
+    
+    P = P + 1 if added_successfully else P
     
     if P % 100 == 0:
         print(f"FINISHED P = {P}")

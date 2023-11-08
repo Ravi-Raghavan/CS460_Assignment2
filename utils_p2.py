@@ -269,6 +269,8 @@ class RRT:
             if new_vertex[0] == self.goal[0] and new_vertex[1] == self.goal[1] and new_vertex[2] == self.goal[2]:
                 self.sampled_goal = True
                 self.goal_index = len(self.vertices) - 1
+        
+        return valid_path_found
     
     #define our Distance Function
     def D(self, point):
