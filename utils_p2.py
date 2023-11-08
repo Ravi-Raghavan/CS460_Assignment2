@@ -81,7 +81,7 @@ class RigidBody:
         ax.set_ylim(0, 2)
         
         #set title for axis
-        ax.set_title('2D Rigid Body Simulation', fontsize = 12)
+        ax.set_title('2D Rigid Body', fontsize = 12)
         
         #Load Polygon Obstacle Data if the file has a value
         self.polygonal_obstacles = np.empty(shape = (0,0))
