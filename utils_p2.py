@@ -506,7 +506,7 @@ class PRM:
                         fringe.put(item)
                     
                 else:
-                    fringe.put(item = (G_value_node + self.D(child_configuration - node[1]) + self.H(child_configuration, goal), (child_configuration, child_index)))
+                    fringe.put(item = (G_value_node + self.D(child_configuration - node_configuration) + self.H(child_configuration, goal), (child_configuration, child_index)))
                     in_fringe[child_index] = 1
                     parents[child_index] = node_index
         
