@@ -275,9 +275,6 @@ class RRT:
     
     #define our Distance Function
     def D(self, point):
-        diameter = np.linalg.norm(np.array([0.1, 0.2])) #Diameter of Circle in which the rigid body is inscribed
-        radius = 0.5 * diameter #Radius of Circle in which the rigid body is inscribed
-        
         #Flatten
         point = point.flatten()
         
@@ -286,7 +283,7 @@ class RRT:
         
         #Calculate Rotational Distance
         angle = point[-1]
-        dr = radius * np.abs(angle)
+        dr = min(abs(angle), 2 * np.pi - abs(angle))
         
         return 0.7 * dt + 0.3 * dr
     
@@ -547,9 +544,6 @@ class PRM:
     
     #define our Distance Function
     def D(self, point):
-        diameter = np.linalg.norm(np.array([0.1, 0.2])) #Diameter of Circle in which the rigid body is inscribed
-        radius = 0.5 * diameter #Radius of Circle in which the rigid body is inscribed
-        
         #Flatten
         point = point.flatten()
         
@@ -558,7 +552,7 @@ class PRM:
         
         #Calculate Rotational Distance
         angle = point[-1]
-        dr = radius * np.abs(angle)
+        dr = min(abs(angle), 2 * np.pi - abs(angle))
         
         return 0.7 * dt + 0.3 * dr
     

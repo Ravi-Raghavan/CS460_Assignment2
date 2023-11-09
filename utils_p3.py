@@ -138,6 +138,8 @@ class Car:
     #Assumption: x, y are scalar values
     #theta is a radian value
     def set_state(self, x, y, theta):
+        #constrain theta to be between -pi and pi
+        theta = theta - (2 * np.pi * (np.floor((theta + np.pi) / (2 * np.pi))))
         self.configuration = np.array([x, y, theta])
     
     #Set Control Input
@@ -314,6 +316,11 @@ class Car:
         
         first_derivative = np.array([v * np.cos(theta), v * np.sin(theta), v * np.tan(phi)/self.L])
         self.configuration += first_derivative * self.delta_t
+        
+        #Make sure the theta angle is from -pi to pi
+        theta = self.configuration[2]
+        theta = theta - (2 * np.pi * (np.floor((theta + np.pi) / (2 * np.pi))))
+        self.configuration[2] = theta
     
     #Plot a configuration given a configuration
     def plot_configuration(self, configuration):
@@ -400,4 +407,255 @@ class Car:
         self.plot_configuration(self.configuration)
         print(f"Old Configuration: {old_configuration}, New Configuration: {self.configuration}, Control Input: {self.control_input}")
     
+    #Function responsible for sampling N random collision-free configurations points
+    def sample_configuration_collision_free(self, N):
+        #Sample a configuration, uniform at random 
+        #Configuration is of the form [x, y, theta] where (x, y) is the location of the focal center of the body and theta is the orientation
+        overall_configurations = []
+        sampled_configurations = []
+        
+        P = 0
+        iterations = 0
+        while P < N:
+            #Sample Configuration
+            configuration = np.array([np.random.uniform(0, 2), np.random.uniform(0, 2), np.random.uniform(-1 * np.pi, np.pi)])
+            overall_configurations.append(configuration)
+            
+            #Generate Rigid Body and Wheels from Configuration            
+            rigid_body = self.generate_rigid_body_from_configuration(configuration)
+            wheels = self.generate_wheels_from_configuration(configuration)
+            
+            #If the rigid body does not collide with anything in the workspace, we have sampled a valid configuration in free C-space
+            if ((not self.check_rigid_body_collision(rigid_body)) and (not self.check_wheel_collision(wheels))):
+                P = P + 1
+                sampled_configurations.append(configuration)
+            
+            iterations = iterations + 1
+        
+        return np.array(sampled_configurations)
     
+    #Function Responsible for Sampling B random controls
+    def sample_controls(self, B):
+        sampled_controls = []
+        for _ in range(B):
+            u = np.array([np.random.uniform(-0.5, 0.5), np.random.uniform(-0.25 * np.pi, 0.25 * np.pi)])
+            sampled_controls.append(u)
+        
+        return np.array(sampled_controls)    
+    
+#Class Representing a Rapidly Exploring Random Tree
+class RRT:
+    def __init__(self, start, goal, rigid_body: Car, b, num_integrations = 40):
+        #Set up start and goal nodes
+        self.start = start.flatten()
+        self.goal = goal.flatten()
+        
+        #Set up other hyperparameters for RRT Generation
+        self.num_integrations = num_integrations
+        self.b = b
+        
+        #Set up vertices and edges and integration steps
+        self.vertices = np.ones(shape = (1, start.shape[0]))
+        self.vertices[0] = self.start
+        self.edges = np.zeros(shape = (len(self.vertices), len(self.vertices)))
+        self.control_information = dict()
+        self.integration_information = dict()
+        
+        #Set up rigid body
+        self.rigid_body = rigid_body
+        
+        #Empty Dictionary to store path in tree
+        self.predecessor = {}
+        
+        #Variable telling if we have sampled goal vertex
+        self.sampled_goal = False
+        self.goal_index = None
+        
+        #Set up Animation Stuff
+        #Animation Object
+        self.animation = None
+        self.animation_configuration = self.start
+        
+        #Centroid Points
+        self.centroid_points = np.empty(shape = (0, 2))
+        
+        #Set up centroid of rigid body
+        self.body_centroid = self.rigid_body.ax.plot(self.start[0], self.start[1], marker='o', markersize=3, color="green")
+        self.frame_number = 0
+        
+    #Add vertex where vertex is a C space point
+    def add_vertex(self, vertex):
+        #Find closest vertex on RRT
+        vertex = vertex.flatten()
+        qrand = vertex
+        
+        closest_vertex_index = np.argmin(np.apply_along_axis(func1d = self.D, axis = 1, arr = self.vertices - vertex.reshape((1, vertex.shape[0]))))
+        qclose = self.vertices[closest_vertex_index].flatten()
+        
+        #Sample Controls
+        sampled_controls = self.rigid_body.sample_controls(self.b)
+        
+        #For each of the sampled controls, we will integrate forward in time the dynamics from the closest node qclose for the same duration T
+        #We will get b new states that are reachable from qclose
+        new_configurations = []
+        integrations_per_control = []
+        
+        #Indicate if we have found valid neighbors
+        valid_neighbors_found = False
+        
+        for control in sampled_controls:
+            u = control.flatten()
+            
+            q_prev = qclose
+            q_new = qclose
+            self.rigid_body.set_state(qclose[0], qclose[1], qclose[2])
+            self.rigid_body.set_control_input(u[0], u[1])
+            
+            is_valid_control = False
+            
+            integrations = 0
+            for _ in range(self.num_integrations):
+                self.rigid_body.compute_next_configuration()
+            
+                q_new = self.rigid_body.configuration.flatten()
+                rigid_body_workspace = self.rigid_body.generate_rigid_body_from_configuration(q_new)
+                wheels_workspace = self.rigid_body.generate_wheels_from_configuration(q_new)
+                
+                if (self.rigid_body.check_rigid_body_collision(rigid_body_workspace) or self.rigid_body.check_wheel_collision(wheels_workspace)):
+                    q_new = q_prev
+                    break
+                else:
+                    is_valid_control = True
+                    integrations += 1
+                        
+            if (not is_valid_control):
+                new_configurations.append(np.array([np.inf, np.inf, np.inf]))
+                integrations_per_control.append(0)
+            else:
+                new_configurations.append(q_new)
+                integrations_per_control.append(integrations)
+                valid_neighbors_found = True
+        
+        index = None
+        
+        #Identify which of the b new states is closest to qrand 
+        if valid_neighbors_found:
+            new_configurations = np.array(new_configurations)
+            closest_to_q_rand_index = np.argmin(np.apply_along_axis(func1d = self.D, axis = 1, arr = new_configurations - qrand.reshape((1, qrand.shape[0]))))
+            q_new_closest = new_configurations[closest_to_q_rand_index].flatten()
+            
+            ### Add q_new_closest to RRT and Edge (q_close, q_new_closest)
+            self.vertices = np.append(self.vertices, q_new_closest.reshape((1, q_new_closest.shape[0])), axis = 0)
+            self.edges = np.vstack((self.edges, np.zeros(shape = (1, self.edges.shape[1]))))
+            self.edges = np.hstack((self.edges, np.zeros(shape = (self.edges.shape[0], 1))))
+            
+            self.edges[closest_vertex_index, -1] = 1
+            self.edges[-1, closest_vertex_index] = 1  
+            
+            self.predecessor[len(self.vertices) - 1] = closest_vertex_index
+            
+            self.control_information[(closest_vertex_index, len(self.vertices) - 1)] = sampled_controls[closest_to_q_rand_index]
+            self.control_information[(len(self.vertices) - 1, closest_vertex_index)] = sampled_controls[closest_to_q_rand_index]
+            
+            self.integration_information[(closest_vertex_index, len(self.vertices) - 1)] = integrations_per_control[closest_to_q_rand_index]
+            self.integration_information[(len(self.vertices) - 1, closest_vertex_index)] = integrations_per_control[closest_to_q_rand_index]
+            
+            #If we have reached goal, set some indicators
+            if q_new_closest[0] == self.goal[0] and q_new_closest[1] == self.goal[1] and q_new_closest[2] == self.goal[2]:
+                self.sampled_goal = True
+                self.goal_index = len(self.vertices) - 1
+            
+            index = len(self.vertices) - 1
+        
+        return valid_neighbors_found, index
+    
+    #define our Distance Function
+    def D(self, point):
+        #Flatten
+        point = point.flatten()
+        
+        #Calculate Euclidean Distance Transitionally
+        dt = np.linalg.norm(point[:-1])
+        
+        #Calculate Rotational Distance
+        angle = point[-1]
+        dr = min(abs(angle), 2 * np.pi - abs(angle))
+        
+        return 0.7 * dt + 0.3 * dr
+    
+    #Generate Path from start to goal
+    #The path are indices so its easier
+    def generate_path(self, goal_index):
+        self.goal_index = goal_index
+        path = [self.goal_index]
+        current_configuration = self.goal.flatten()
+        current_configuration_index = self.goal_index
+        
+        controls = []
+        integration_steps = []
+        
+        while not self.equal(current_configuration, self.start):
+            next_configuration_index = self.predecessor.get(current_configuration_index, None)
+            
+            u = self.control_information[(next_configuration_index, current_configuration_index)].flatten()
+            controls.append(u)
+            
+            steps = self.integration_information[(next_configuration_index, current_configuration_index)]
+            integration_steps.append(steps)
+            
+            if next_configuration_index == None: 
+                return np.empty(shape = (0,0)), np.empty(shape = (0,0)), np.empty(shape = (0,0))
+            
+            path.append(next_configuration_index)
+            current_configuration = self.vertices[next_configuration_index]
+            current_configuration_index = next_configuration_index
+        
+        path = np.flip(np.array(path))
+        self.rrt_path = path     
+        
+        controls = np.flip(np.array(controls), axis = 0)
+        self.control_sequence = controls
+        
+        integration_steps = np.flip(np.array(integration_steps))
+        self.integration_steps = integration_steps
+        
+        return path, controls, integration_steps
+        
+    #Return true if two configurations are equal
+    def equal(self, configurationA, configurationB):
+        configurationA, configurationB = configurationA.flatten(), configurationB.flatten()
+        return configurationA[0] == configurationB[0] and configurationA[1] == configurationB[1] and configurationA[2] == configurationB[2]
+    
+    #Function responsible for plotting a configuration
+    def update_animation_configuration(self, frame):        
+        #Get Configuration
+        configuration = self.animation_configuration    
+        
+        #Get control sequence
+        u = self.control_sequence[min(frame, len(self.control_sequence) - 1)].flatten()
+        self.rigid_body.set_control_input(u[0], u[1])
+        
+        #Get Car and Wheels
+        rigid_body = self.rigid_body.generate_rigid_body_from_configuration(configuration)
+        wheels = self.rigid_body.generate_wheels_from_configuration(configuration)
+        
+        #Update Rigid Body Patch
+        self.rigid_body.patch.set_xy(rigid_body)
+        
+        #Add wheel patches to rigid body figure
+        self.rigid_body.bottom_left_wheel_patch.set_xy(wheels[0])
+        self.rigid_body.bottom_right_wheel_patch.set_xy(wheels[1])
+        self.rigid_body.top_left_wheel_patch.set_xy(wheels[2])
+        self.rigid_body.top_right_wheel_patch.set_xy(wheels[3])
+        
+        #Get Centroid Points and add to rigid body figure
+        self.centroid_points = np.vstack((self.centroid_points, configuration[:2]))
+        self.path = Line2D(self.centroid_points[:, 0].flatten(), self.centroid_points[:, 1].flatten())
+        self.rigid_body.ax.add_line(self.path)
+        
+        self.body_centroid[0].set_data([configuration[0], configuration[1]])
+        self.frame_number = frame
+        
+        #Calculate Next Configuration
+        
+        return self.rigid_body.patch, self.rigid_body.bottom_left_wheel_patch, self.rigid_body.bottom_right_wheel_patch, self.rigid_body.top_left_wheel_patch, self.rigid_body.top_right_wheel_patch, self.path, self.body_centroid[0]
