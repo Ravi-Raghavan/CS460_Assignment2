@@ -261,8 +261,11 @@ Let $V$ be the set of vertices of the RRT and $E$ be the set of edges.
 \begin{algorithm}
 \caption{RRT Algorithm}
 \begin{algorithmic} 
-\STATE Parameters: $N$ (number of nodes we want to have in our RRT)
-\STATE i $\rightarrow$ 0
+\STATE Parameters: $N$ (number of nodes we want to have in our RRT), $q_{start}$(Node to start our RRT From), $q_{goal}$ (Goal Node)
+
+\STATE{$V = V \cup \{ q_{start}\}$}
+\STATE i $\rightarrow$ 1
+
 \WHILE{$i < N$}
 \STATE {Sample $q_{rand}$ from the free configuration space} 
 \STATE {Let $q_{near}$ be the point on the RRT that is closest to $q_{rand}$.}
@@ -277,19 +280,150 @@ Let $V$ be the set of vertices of the RRT and $E$ be the set of edges.
 \ENDIF
 \ENDWHILE
 
+\IF{$q_{goal} \notin V$}
+\STATE{Let $q_{near}$ be the point on the RRT that is closest to $q_{goal}$.}
+
+\IF{There is a Collision Free path from $q_{near}$ to $q_{goal}$}
+\STATE{$V = V \cup \{q_{goal\} }$, $E = E \cup \{(q_{near}, q_{goal})\}$}
+\ENDIF
+
+\ENDIF
+
 \end{algorithmic}
 \end{algorithm}
 
 
 % SECTION 2.5
+\newpage 
 \subsection{PRM Implementation}
+Let $V$ be the set of vertices of the PRM and $E$ be the set of edges. 
+
+
+\begin{algorithm}
+\caption{PRM Algorithm}
+\begin{algorithmic} 
+\STATE Parameters: $N$ (number of nodes we want to have in our PRM), 
+$k$ (how many neighbors we want to analyze when forming edges)
+\STATE i $\rightarrow$ 0
+\WHILE {$i < N$}
+\STATE {Sample $q_{rand}$ from the free configuration space} 
+\STATE {$V = V \cup \{q_{steer\} }$}
+\STATE {Let $Q_{neighbors}$ be the $k$ nearest neighbors of $q_{rand}$ out of all the nodes currently in the PRM }
+
+\FOR{$q_{n} \in Q_{neighbors}$}
+\IF{There is a collision free path between $q_{n}$ and $q_{rand}$}
+\STATE{$E = E \cup \{(q_{n}, q_{rand})\}$}\ENDIF
+\ENDFOR
+\STATE {i $\rightarrow i + 1$ } 
+\ENDWHILE
+
+\end{algorithmic}
+\end{algorithm}
+
+\begin{algorithm}
+\caption{PRM Query}
+\begin{algorithmic}
+\STATE Parameters: $q_{start}$(Start Node), $q_{goal}$ (Goal Node), $k$ (how many neighbors we want to analyze when forming edges)
+
+\STATE {Let $Q_{neighbors}$ be the $k$ nearest neighbors of $q_{start}$ out of all the nodes currently in the PRM.}
+
+\FOR{$q_{n} \in Q_{neighbors}$}
+\IF{There is a collision free path between $q_{n}$ and $q_{start}$}
+\STATE{$E = E \cup \{(q_{n}, q_{start})\}$}\ENDIF
+\ENDFOR
+
+\STATE {Let $Q^2_{neighbors}$ be the $k$ nearest neighbors of $q_{goal}$ out of all the nodes currently in the PRM.}
+
+\FOR{$q_{n} \in Q^2_{neighbors}$}
+\IF{There is a collision free path between $q_{n}$ and $q_{goal}$}
+\STATE{$E = E \cup \{(q_{n}, q_{goal})\}$}\ENDIF
+\ENDFOR
+
+\STATE{Run $A^*$ Search Algorithm on the PRM Graph to find a path from $q_{start}$ to $q_{goal}$ in the Configuration space via the nodes on our PRM}
+
+\end{algorithmic}
+
+\end{algorithm}
+
+
 %%%%%%%%% PART 3 %%%%%%%%%%%%%%%%%%%
+\newpage 
 \maketitle
 \section{Motion Planning for a First-Order Car}
 % SECTION 3.1
 \subsection{Implementation of Dynamics}
+Configurations are defined as such: \newline 
+\begin{align}
+    q(t) &= \begin{bmatrix}
+           x(t) \\
+           y(t) \\
+           \theta(t)
+         \end{bmatrix}
+\end{align}
+
+Controls are defined as such: \newline 
+\begin{align}
+    u(t) &= \begin{bmatrix}
+           v(t) \\
+           \phi(t)
+         \end{bmatrix}
+\end{align}
+
+Derivative of Configuration is defined as such: \newline 
+\begin{align}
+    \dot{q}(t) &= \begin{bmatrix}
+           v\cos{\theta(t)} \\
+           v\sin{\theta(t)} \\
+           \frac{v}{L} \tan{\phi}
+         \end{bmatrix}
+\end{align}
+
+System Dynamics: \newline 
+\begin{align}
+    q(t + dt) &= q(t) + \dot{q}(t) dt
+\end{align}
+
 % SECTION 3.2
 \subsection{Integration of Dynamics}
+Given a starting configuration(i.e. $q(0)$) and a constant control (i.e. $\mu$), I was able to perform the integration of the above system dynamic equation to determine the trajectory of the car. 
+
+To achieve this, I would simply set $dt = \Delta t = 0.01$. Then, the system dynamic equation can be rewritten as such: \newline 
+\begin{align}
+    q(t + \Delta t) &= q(t) + \dot{q}(t) \Delta t
+\end{align}
+
+\begin{align}
+    q(t + 0.01) &= q(t) + \dot{q}(t) (0.01)
+\end{align}
+
+The Initial Value of this equation is 
+
+\begin{align}
+    q(0) &= \begin{bmatrix}
+           x_0 \\
+           y_0 \\
+           \theta_0
+         \end{bmatrix}
+\end{align}
+
+The control is constant and can be denoted as such: 
+\begin{align}
+    u &= \begin{bmatrix}
+           v \\
+           \phi
+         \end{bmatrix}
+\end{align}
+
+To solve for the Derivative of Configuration: \newline 
+\begin{align}
+    \dot{q}(t) &= \begin{bmatrix}
+           v\cos{\theta(t)} \\
+           v\sin{\theta(t)} \\
+           \frac{v}{L} \tan{\phi}
+         \end{bmatrix}
+\end{align}
+
+The problem description denotes $L = 0.2$. Now, all the necessary information is needed to solve the equation $q(t + 0.01) = q(t) + \dot{q}(t) (0.01)$ for the value of the configuration at the next time step! 
 % SECTION 3.3
 \subsection{RTT and Planning with Dynamics}
 
