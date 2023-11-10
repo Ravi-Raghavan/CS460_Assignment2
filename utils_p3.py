@@ -68,7 +68,7 @@ def check_polygon_collision(poly1, poly2):
     
 #Python Class for 2D Rigid Body
 class Car:
-    def __init__(self, f, ax, file, randomize_configuration = True, selected_configuration = None):
+    def __init__(self, f, ax, file, randomize_configuration = True, selected_configuration = None, enable_keyboard_control = True):
         #Store figure and axes as instance variables
         self.f = f
         self.ax = ax
@@ -115,7 +115,8 @@ class Car:
         ax.add_line(self.path)
         
         #Register Keyboard Handler
-        self.f.canvas.mpl_connect('key_press_event', self.keyboard_event_handler)
+        if enable_keyboard_control:
+            self.f.canvas.mpl_connect('key_press_event', self.keyboard_event_handler)
         
         #Plot Car and Wheels based on initial configuration
         rigid_body = self.generate_rigid_body_from_configuration(self.configuration)
@@ -355,6 +356,8 @@ class Car:
         self.rotation_points = np.vstack((self.rotation_points, self.configuration[:2]))
         self.path.set_data(self.rotation_points.T)
         
+        self.ax.set_aspect("equal")
+        
         rigid_body = self.generate_rigid_body_from_configuration(self.configuration)
         wheels = self.generate_wheels_from_configuration(self.configuration)
         
@@ -378,7 +381,7 @@ class Car:
             self.control_input += np.array([0, np.pi/12])
         elif event.key == "left":
             self.control_input += np.array([0, -1 * np.pi/12])
-        elif event.key == ' ':
+        elif event.key == 'c':
             self.control_input += np.array([0,0])
         
         if self.control_input[0] < 0:
@@ -466,10 +469,6 @@ class RRT:
         
         #Empty Dictionary to store path in tree
         self.predecessor = {}
-        
-        #Variable telling if we have sampled goal vertex
-        self.sampled_goal = False
-        self.goal_index = None
         
         #Set up Animation Stuff
         #Animation Object
@@ -560,11 +559,6 @@ class RRT:
             self.integration_information[(closest_vertex_index, len(self.vertices) - 1)] = integrations_per_control[closest_to_q_rand_index]
             self.integration_information[(len(self.vertices) - 1, closest_vertex_index)] = integrations_per_control[closest_to_q_rand_index]
             
-            #If we have reached goal, set some indicators
-            if q_new_closest[0] == self.goal[0] and q_new_closest[1] == self.goal[1] and q_new_closest[2] == self.goal[2]:
-                self.sampled_goal = True
-                self.goal_index = len(self.vertices) - 1
-            
             index = len(self.vertices) - 1
         
         return valid_neighbors_found, index
@@ -586,23 +580,23 @@ class RRT:
     #Generate Path from start to goal
     #The path are indices so its easier
     def generate_path(self, goal_index):
-        self.goal_index = goal_index
-        path = [self.goal_index]
-        current_configuration = self.goal.flatten()
-        current_configuration_index = self.goal_index
+        path = [goal_index]
+        current_configuration = self.vertices[goal_index].flatten()
+        current_configuration_index = goal_index
         
         controls = []
         integration_steps = []
         
         while not self.equal(current_configuration, self.start):
             next_configuration_index = self.predecessor.get(current_configuration_index, None)
+            next_configuration = self.vertices[next_configuration_index]
             
             u = self.control_information[(next_configuration_index, current_configuration_index)].flatten()
             controls.append(u)
             
             steps = self.integration_information[(next_configuration_index, current_configuration_index)]
             integration_steps.append(steps)
-            
+                        
             if next_configuration_index == None: 
                 return np.empty(shape = (0,0)), np.empty(shape = (0,0)), np.empty(shape = (0,0))
             
@@ -618,7 +612,7 @@ class RRT:
         
         integration_steps = np.flip(np.array(integration_steps))
         self.integration_steps = integration_steps
-        
+                
         return path, controls, integration_steps
         
     #Return true if two configurations are equal
@@ -643,6 +637,9 @@ class RRT:
         
         #Update Rigid Body Patch
         self.rigid_body.patch.set_xy(rigid_body_workspace)
+        
+        #Set equal aspect ratio
+        self.rigid_body.ax.set_aspect("equal")
         
         #Add wheel patches to rigid body figure
         self.rigid_body.bottom_left_wheel_patch.set_xy(wheels[0])
@@ -691,6 +688,9 @@ class RRT:
         
         #Update Rigid Body Patch
         self.rigid_body.patch.set_xy(rigid_body_workspace)
+        
+        #Set equal aspect ratio
+        self.rigid_body.ax.set_aspect("equal")
         
         #Add wheel patches to rigid body figure
         self.rigid_body.bottom_left_wheel_patch.set_xy(wheels[0])

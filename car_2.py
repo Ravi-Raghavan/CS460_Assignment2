@@ -2,6 +2,7 @@
 from utils_p3 import *
 import argparse
 from matplotlib.animation import FuncAnimation
+import time
 
 f,ax = plt.subplots(dpi = 100)
 ax.set_aspect("equal")
@@ -17,7 +18,7 @@ goal = np.array([args.goal[0], args.goal[1], args.goal[2]])
 rigid_polygons_file = args.map[0]
 
 #Define our car 
-car = Car(f, ax, rigid_polygons_file, False, start)
+car = Car(f, ax, rigid_polygons_file, False, start, enable_keyboard_control = False)
 
 #Define our RRT
 rrt = RRT(start, goal, car, b = 1, num_integrations = 250)
@@ -46,7 +47,25 @@ def D(q1, q2, alpha):
     dr = Dr(q1, q2)
     
     return (alpha * dt) + ((1 - alpha) * dr)
-        
+
+#Compute Path Distance
+def path_distance(rrt: RRT, path, controls, integration_steps):
+    q = start
+    
+    L = 0.2
+    path_distance = 0
+    
+    for control_index, control in enumerate(controls):
+        u = control.flatten()
+        for step in range(integration_steps[control_index]):
+            v, phi = u[0], u[1]
+            theta = q[2]
+            derivative = np.array([v * np.cos(theta), v * np.sin(theta), v * np.tan(phi) / L])
+            change_q = (rrt.rigid_body.delta_t) * derivative
+            path_distance += rrt.D(change_q)
+            q += change_q
+    
+    return path_distance
 
 P = 0
 reached_goal_region = False
@@ -55,7 +74,12 @@ goal_index = None
 probability = 0.05
 iterations = 1
 
-while not reached_goal_region:
+max_iterations = 1000
+
+#Start the timer
+start_time = time.time()
+
+while not reached_goal_region and iterations <= max_iterations:
     #Sample Configuration, Pick Goal node with 'probability' Probability, and add Node to RRT
     configuration = car.sample_configuration_collision_free(1)[0]    
     uniform_sampled_number = np.random.uniform(0, 1)
@@ -98,24 +122,58 @@ while not reached_goal_region:
     if P % 10 == 0:
         print(f"P = {P}, Dt = {np.min(dt_values)}, Dr = {np.min(dr_values)}, minDT = {min_translational_distance}, minDR = {min_rotational_distance}, In Goal Region: {reached_goal_region}, Uniform Distribution Number: {uniform_sampled_number}, Probability: {probability}")
     
-    if iterations % 250 == 0:
-        probability *= 2
-    
     iterations = iterations + 1
 
+#Finished Building RRT
+end_time = time.time()
+rrt_build_time = end_time - start_time
+
+if not reached_goal_region:    
+    #RRT Vertices
+    rrt_vertices = rrt.vertices
+    
+    min_distance = np.inf
+    min_translational_distance = np.inf
+    min_rotational_distance = np.inf
+    
+    closest_vertex = None
+    for vertex_index, vertex in enumerate(rrt_vertices):
+        v = vertex.flatten()
+        dt = Dt(v, goal)
+        dr = Dr(v, goal)
+        d = D(v, goal, 0.7)
+        
+        if d < min_distance:
+            min_distance = d
+            min_translational_distance = dt
+            min_rotational_distance = dr
+            closest_vertex = vertex
+            goal_index = vertex_index
+    
+    
 #Generate Path
-if reached_goal_region:
-    path, controls, integration_steps = rrt.generate_path(goal_index)
-    print(f"Path: {path}")
-    print(f"Controls: {controls}")
-    print(f"Integration Steps: {integration_steps}")
+start_time = time.time()
+path, controls, integration_steps = rrt.generate_path(goal_index)
+end_time = time.time()
+
+rrt_path_generation_time = end_time - start_time
+
+print(f"Path: {path}")
+print(f"Controls: {controls}")
+print(f"Integration Steps: {integration_steps}")
+
+print(f"Path Length: {len(path)}")
+print(f"Number of Controls: {len(controls)}")
+print(f"Length of Integration Steps Array: {len(integration_steps)}")
+
+total_integration_steps = np.sum(integration_steps)
+print(f"Total Number of Integration Steps: {total_integration_steps}")
+
+print(f"Reached Goal Region? {reached_goal_region}")
+print(f"Path Distance: {path_distance(rrt, path, controls, integration_steps)}")
+print(f"RRT Build Time: {rrt_build_time}")
+print(f"RRT Path Generation Time: {rrt_path_generation_time}")
+
     
-    print(f"Path Length: {len(path)}")
-    print(f"Number of Controls: {len(controls)}")
-    print(f"Length of Integration Steps Array: {len(integration_steps)}")
-    
-    total_integration_steps = np.sum(integration_steps)
-    print(f"Total Number of Integration Steps: {total_integration_steps}")
-    
-    rrt.animation = FuncAnimation(f, rrt.update_animation_configuration, frames = range(0, total_integration_steps + 1), init_func = rrt.init_animation_configuration, blit = True, interval = 20, repeat = False)
-    plt.show()
+rrt.animation = FuncAnimation(f, rrt.update_animation_configuration, frames = range(0, total_integration_steps + 1), init_func = rrt.init_animation_configuration, blit = True, interval = 20, repeat = False)
+plt.show()
