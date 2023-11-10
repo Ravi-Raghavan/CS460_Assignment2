@@ -40,7 +40,7 @@ def D(point):
     
     #Calculate Rotational Distance
     angle = point[-1]
-    dr = radius * np.abs(angle)
+    dr = min(abs(angle), 2 * np.pi - abs(angle))
     
     return 0.7 * dt + 0.3 * dr
 
@@ -49,9 +49,10 @@ print(configurations)
 
 #Convert to Radians
 thetas = configurations[:, 2].flatten()
-thetas = [theta % 360 if theta >= 0 else theta % (-360) for theta in thetas]
-thetas = [theta if theta > 0 and theta < 180 else theta - 360 for theta in thetas]
-thetas = np.deg2rad(thetas)
+theta = np.deg2rad(thetas)
+
+#Put in range [-pi, pi]
+theta = theta - (2 * np.pi * (np.floor((theta + np.pi) / (2 * np.pi))))
 
 #Put them back in configurations
 configurations[:, 2] = thetas
