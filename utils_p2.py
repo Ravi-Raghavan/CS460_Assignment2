@@ -186,9 +186,9 @@ class RigidBody:
         
         DeltaTheta = self.goal_configuration[2] - self.start_configuration[2]
         if DeltaTheta > np.pi:
-            DeltaTheta = DeltaTheta - (2 * np.pi)
+            DeltaTheta = np.abs(DeltaTheta) - (2 * np.pi)
         elif DeltaTheta < -1 * np.pi:
-            DeltaTheta = (2 * np.pi) - DeltaTheta
+            DeltaTheta = (2 * np.pi) - np.abs(DeltaTheta)
             
         dTheta = DeltaTheta / self.timesteps
         dConfiguration[2] = dTheta
@@ -309,9 +309,9 @@ class RRT:
             
             DeltaTheta = vertex[2] - closest_vertex[2]
             if DeltaTheta > np.pi:
-                DeltaTheta = DeltaTheta - (2 * np.pi)
+                DeltaTheta = np.abs(DeltaTheta) - (2 * np.pi)
             elif DeltaTheta < -1 * np.pi:
-                DeltaTheta = (2 * np.pi) - DeltaTheta
+                DeltaTheta = (2 * np.pi) - np.abs(DeltaTheta)
                 
             dTheta = DeltaTheta / timesteps
             dConfiguration[2] = dTheta
@@ -571,9 +571,9 @@ class PRM:
             
             DeltaTheta = vertexB[2] - vertexA[2]
             if DeltaTheta > np.pi:
-                DeltaTheta = DeltaTheta - (2 * np.pi)
+                DeltaTheta = np.abs(DeltaTheta) - (2 * np.pi)
             elif DeltaTheta < -1 * np.pi:
-                DeltaTheta = (2 * np.pi) - DeltaTheta
+                DeltaTheta = (2 * np.pi) - np.abs(DeltaTheta)
                 
             dTheta = DeltaTheta / timesteps
             dConfiguration[2] = dTheta
