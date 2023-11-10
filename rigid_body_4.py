@@ -106,11 +106,15 @@ while P < N:
     
     iterations = iterations + 1
 
-path = rrt.generate_path()
+path, configuration_derivatives, timestep_array = rrt.generate_path()
 
 print("Path:", path)
+print("Configuration Derivatives: ", configuration_derivatives)
+print("Timestep Array: ", timestep_array)
 
 #Generate Animation
 if len(path) > 0:
-    rrt.animation = FuncAnimation(f, rrt.update_animation_configuration, frames = range(0, path.size), init_func = rrt.init_animation_configuration, blit = True, interval = 800, repeat = False)
+    total_timesteps = np.sum(timestep_array)
+    print("Total Timesteps: ", total_timesteps)
+    rrt.animation = FuncAnimation(f, rrt.update_animation_configuration, frames = range(0, total_timesteps + 1), init_func = rrt.init_animation_configuration, blit = True, interval = 25, repeat = False)
     plt.show()

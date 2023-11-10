@@ -273,6 +273,9 @@ class RRT:
         #Set up Animation Stuff
         #Animation Object
         self.animation = None
+        self.configuration_derivatives_information = dict()
+        self.timestep_information = dict()
+        self.animation_configuration = self.start
         
         #Centroid Points
         self.centroid_points = np.empty(shape = (0, 2))
@@ -293,6 +296,10 @@ class RRT:
         timesteps = 100
         valid_path_found = False
         current_configuration = closest_vertex
+        
+        #Store integration information
+        derivative_configuration = 0
+        timesteps_used = 0
         
         for timestep in range(1, timesteps + 1):
             dConfiguration = ((vertex - closest_vertex) / timesteps)
@@ -316,6 +323,8 @@ class RRT:
             else:
                 valid_path_found = True
                 current_configuration = next_configuration
+                derivative_configuration = dConfiguration
+                timesteps_used += 1
         
         #If we found valid path, add to graph
         if valid_path_found:            
@@ -327,6 +336,12 @@ class RRT:
             self.edges[-1, closest_vertex_index] = 1  
             
             self.predecessor[len(self.vertices) - 1] = closest_vertex_index
+            
+            self.configuration_derivatives_information[(closest_vertex_index, len(self.vertices) - 1)] = derivative_configuration
+            self.configuration_derivatives_information[(len(self.vertices) - 1, closest_vertex_index)] = -1 * derivative_configuration
+            
+            self.timestep_information[(closest_vertex_index, len(self.vertices) - 1)] = timesteps_used
+            self.timestep_information[(len(self.vertices) - 1, closest_vertex_index)] = timesteps_used
             
             if current_configuration[0] == self.goal[0] and current_configuration[1] == self.goal[1] and current_configuration[2] == self.goal[2]:
                 self.sampled_goal = True
@@ -370,19 +385,35 @@ class RRT:
         current_configuration = self.goal.flatten()
         current_configuration_index = self.goal_index
         
+        configuration_derivatives = []
+        timestep_array = []
+        
         while not self.equal(current_configuration, self.start):
             next_configuration_index = self.predecessor.get(current_configuration_index, None)
             
+            dConfiguration = self.configuration_derivatives_information[(next_configuration_index, current_configuration_index)]
+            timestep = self.timestep_information[(next_configuration_index, current_configuration_index)]
+            
             if next_configuration_index == None: 
-                return np.empty(shape = (0,0))
+                return np.empty(shape = (0,0)), np.empty(shape = (0,0)), np.empty(shape = (0,0))
             
             path.append(next_configuration_index)
             current_configuration = self.vertices[next_configuration_index]
             current_configuration_index = next_configuration_index
+            
+            configuration_derivatives.append(dConfiguration)
+            timestep_array.append(timestep)
         
         path = np.flip(np.array(path))
         self.rrt_path = path     
-        return path       
+        
+        configuration_derivatives = np.flip(np.array(configuration_derivatives))
+        timestep_array = np.flip(np.array(timestep_array))
+        
+        self.configuration_derivatives = configuration_derivatives
+        self.timestep_array = timestep_array
+        
+        return path, configuration_derivatives, timestep_array     
         
     #Return true if two configurations are equal
     def equal(self, configurationA, configurationB):
@@ -391,7 +422,9 @@ class RRT:
     
     #Function Responsible for initializing configuration
     def init_animation_configuration(self):
-        configuration = self.vertices[self.rrt_path[0]]
+        self.animation_configuration = self.start
+        configuration = self.animation_configuration
+        
         rigid_body = self.rigid_body.generate_rigid_body_from_configuration(configuration)
         
         self.patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
@@ -407,8 +440,25 @@ class RRT:
         return self.patch, self.path, self.body_centroid[0]
     
     #Function responsible for plotting a configuration
-    def update_animation_configuration(self, frame):        
-        configuration = self.vertices[self.rrt_path[frame]]
+    def update_animation_configuration(self, frame):    
+        configuration = self.animation_configuration
+        
+        #Compute subsequences sum
+        time_step_index = -1
+        subsequence_total_steps_array = [0]
+        for index in range(len(self.timestep_array)):
+            subsequence_total_steps = np.sum(self.timestep_array[0: index + 1])
+            subsequence_total_steps_array.append(subsequence_total_steps)
+        
+        #Get the time step index
+        for index in range(len(self.timestep_array)):
+            steps = subsequence_total_steps_array[index + 1]
+            prev_steps = subsequence_total_steps_array[index]
+            
+            if prev_steps <= frame and frame < steps:
+                time_step_index = index
+                break
+        
         rigid_body = self.rigid_body.generate_rigid_body_from_configuration(configuration)
         
         self.patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
@@ -419,8 +469,21 @@ class RRT:
         self.rigid_body.ax.add_line(self.path)
         
         self.body_centroid[0].set_data([configuration[0], configuration[1]])
-        
         self.frame_number = frame
+        
+        #Update animation configuration for next frame
+        original_configuration = np.zeros(shape = (3,))
+        original_configuration[0] = self.animation_configuration[0]
+        original_configuration[1] = self.animation_configuration[1]
+        original_configuration[2] = self.animation_configuration[2]
+        
+        dConfiguration = self.configuration_derivatives[time_step_index]
+        self.animation_configuration += dConfiguration
+        self.animation_configuration[2] = self.animation_configuration[2] - (2 * np.pi * (np.floor((self.animation_configuration[2] + np.pi) / (2 * np.pi))))
+        
+        print(f"Frame: {frame}, Configuration: {configuration}, Time Step Index: {time_step_index}")
+        print(f"[2]Frame: {frame}, Original Configuration: {original_configuration}, Next Computed Configuration: {self.animation_configuration}")
+
         return self.patch, self.path, self.body_centroid[0]
             
 #Class Representing Probabilistic Road Map

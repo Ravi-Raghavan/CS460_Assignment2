@@ -358,7 +358,22 @@ class Car:
         return self.patch, self.bottom_left_wheel_patch, self.bottom_right_wheel_patch, self.top_left_wheel_patch, self.top_right_wheel_patch, self.path
     
     #Update configuration at next time step
-    def animation_update_configuration(self, frame):
+    def animation_update_configuration(self, frame):                
+        self.rotation_points = np.vstack((self.rotation_points, self.configuration[:2]))
+        self.path.set_data(self.rotation_points.T)
+        
+        self.ax.set_aspect("equal")
+        
+        rigid_body = self.generate_rigid_body_from_configuration(self.configuration)
+        wheels = self.generate_wheels_from_configuration(self.configuration)
+        
+        self.patch.set_xy(rigid_body)
+        self.bottom_left_wheel_patch.set_xy(wheels[0])
+        self.bottom_right_wheel_patch.set_xy(wheels[1])
+        self.top_left_wheel_patch.set_xy(wheels[2])
+        self.top_right_wheel_patch.set_xy(wheels[3])
+        
+        #Set up next configuration
         old_configuration = np.zeros(shape = self.configuration.shape)
         old_configuration[0] = self.configuration[0]
         old_configuration[1] = self.configuration[1]
@@ -371,23 +386,7 @@ class Car:
             self.configuration[0] = old_configuration[0]
             self.configuration[1] = old_configuration[1]
             self.configuration[2] = old_configuration[2]
-                
-        self.rotation_points = np.vstack((self.rotation_points, self.configuration[:2]))
-        self.path.set_data(self.rotation_points.T)
         
-        self.ax.set_aspect("equal")
-        
-        rigid_body = self.generate_rigid_body_from_configuration(self.configuration)
-        wheels = self.generate_wheels_from_configuration(self.configuration)
-        
-        self.patch.set_xy(rigid_body)
-        self.bottom_left_wheel_patch.set_xy(wheels[0])
-        self.bottom_right_wheel_patch.set_xy(wheels[1])
-        
-        self.top_left_wheel_patch.set_xy(wheels[2])
-        self.top_right_wheel_patch.set_xy(wheels[3])
-        
-        print(f"Old Configuration: {old_configuration}, New Configuration: {self.configuration}, Control Input: {self.control_input}, Frame: {frame}")
         return self.patch, self.bottom_left_wheel_patch, self.bottom_right_wheel_patch, self.top_left_wheel_patch, self.top_right_wheel_patch, self.path
         
     # Event handler to change the rotation angle
@@ -680,8 +679,8 @@ class RRT:
         configuration = self.animation_configuration.flatten()
         
         #Compute subsequence sum of integration step array
-        integration_step_index = None
-        subsequence_total_steps_array = [-1]
+        integration_step_index = -1
+        subsequence_total_steps_array = [0]
         for index in range(len(self.integration_steps)):
             subsequence_total_steps = np.sum(self.integration_steps[0: index + 1])
             subsequence_total_steps_array.append(subsequence_total_steps)
@@ -691,7 +690,7 @@ class RRT:
             steps = subsequence_total_steps_array[index + 1]
             prev_steps = subsequence_total_steps_array[index]
             
-            if prev_steps < frame and frame <= steps:
+            if prev_steps <= frame and frame < steps:
                 integration_step_index = index
                 break
         
