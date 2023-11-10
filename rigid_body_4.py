@@ -33,9 +33,35 @@ print("Map File: ", rigid_polygons_file)
 
 rrt = RRT(start, goal, rigid_body)
 
+#Calculate Translational Distance between two configurations
+def Dt(q1, q2):
+    q1 = q1.flatten()
+    q2 = q2.flatten()
+    
+    dt = np.linalg.norm(q1[:-1] - q2[:-1])
+    return dt
+
+#Calculate Rotational Distance between two configurations
+def Dr(q1, q2):
+    q1 = q1.flatten()
+    q2 = q2.flatten()
+    
+    dr = min(abs(q1[2] - q2[2]), 2 * np.pi - abs(q1[2] - q2[2]))
+    return dr
+    
+
+#Calculate Distance between two Configurations
+def D(q1, q2, alpha):
+    #calculate dt and dr
+    dt = Dt(q1, q2)
+    dr = Dr(q1, q2)
+    
+    return (alpha * dt) + ((1 - alpha) * dr)
+
 #Finished Creating RRT
 probability = 0.05
 iterations = 1
+reached_goal_region = False
 
 while P < N:
     configuration = rigid_body.sample_configuration_collision_free(1)[0] 
@@ -44,10 +70,39 @@ while P < N:
     configuration = goal if uniform_sampled_number < probability else configuration   
     added_successfully = rrt.add_vertex(configuration)
     
+    #RRT Vertices
+    rrt_vertices = rrt.vertices
+    
+    min_distance = np.inf
+    min_translational_distance = np.inf
+    min_rotational_distance = np.inf
+    
+    dt_values = []
+    dr_values = []
+    
+    closest_vertex = None
+    for vertex_index, vertex in enumerate(rrt_vertices):
+        v = vertex.flatten()
+        dt = Dt(v, goal)
+        dr = Dr(v, goal)
+        d = D(v, goal, 0.7)
+        
+        if dt < 0.1 and dr < 0.5:
+            reached_goal_region = True
+            if d < min_distance:
+                min_distance = d
+                min_translational_distance = dt
+                min_rotational_distance = dr
+                closest_vertex = vertex
+                goal_index = vertex_index
+        
+        dt_values.append(dt)
+        dr_values.append(dr)
+    
     P = P + 1 if added_successfully else P
     
     if P % 10 == 0:
-        print(f"FINISHED P = {P}, Uniform Distribution Number: {uniform_sampled_number}, Probability: {probability}")
+        print(f"P = {P}, Dt = {np.min(dt_values)}, Dr = {np.min(dr_values)}, minDT = {min_translational_distance}, minDR = {min_rotational_distance}, In Goal Region: {reached_goal_region}, Uniform Distribution Number: {uniform_sampled_number}, Probability: {probability}")
     
     iterations = iterations + 1
 

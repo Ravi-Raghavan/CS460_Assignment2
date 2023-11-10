@@ -331,6 +331,7 @@ class RRT:
             if current_configuration[0] == self.goal[0] and current_configuration[1] == self.goal[1] and current_configuration[2] == self.goal[2]:
                 self.sampled_goal = True
                 self.goal_index = len(self.vertices) - 1
+                print("We have sampled the goal vertex")
         
         return valid_path_found
     
@@ -352,8 +353,17 @@ class RRT:
     #The path are indices so its easier
     def generate_path(self):
         if not self.sampled_goal:
-            print("We have not sampled the goal vertex. Cannot find Path")
-            return np.empty(shape = (0,0))
+            print("We have not sampled the goal vertex. Instead, we will plot the path to the point closest to the goal node")
+            self.goal = self.goal.flatten()
+            closest_vertex_index = np.argmin(np.apply_along_axis(func1d = self.D, axis = 1, arr = self.vertices - self.goal.reshape((1, self.goal.shape[0]))))
+            
+            #Update goal and goal_index
+            self.goal_index = closest_vertex_index
+            self.goal = self.vertices[closest_vertex_index].flatten()
+            
+            #New Goal
+            print(f"The closest Node we could find to the goal node was {self.goal}")
+        
             
         path = [self.goal_index]
         current_configuration = self.goal.flatten()
