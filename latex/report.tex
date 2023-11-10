@@ -467,20 +467,22 @@ The problem description denotes $L = 0.2$. Now, all the necessary information is
 \subsubsection{Experimentation}
 To experiment with different design choices, my strategy was to change the value of $b$ and observe the success rate of the RRT Algorithm, the resulting path quality of the path returned by the RRT Algorithm, and the overall computational cost. 
 
-I have run these experiments on various polygonal scenes. For each polygonal scene, I ran 5 trials for different values of $b$(i.e. 1, 3, and 5). For each trial on each value of $b$, I report a tuple $(i, j, k_1, k_2)$ \newline 
+I have run these experiments on various polygonal scenes. For each polygonal scene, I ran 5 trials for different values of $b$(i.e. 1, 3, and 5). For each trial on each value of $b$, I report a tuple $(i, j, k)$ \newline 
 
 $i = 0$ if we could NOT find a successful path from the start to the goal region. $i = 1$ if we could find a successful path from the start to the goal region. \newline 
 
 $j$ is equal to the total path distance as computed by the distance metric in this configuration space \newline 
 
-$k_1$ is the time required to build the RRT \newline 
-
-$k_2$ is the time required to generate the actual path from the RRT \newline 
+$k$ is the time required to build the RRT in seconds \newline 
 
 Scene 1: $rigid\_polygons.npy$
 
 For each experiment, I ran: \newline 
-python car\_2.py --start 0.5 0.25 0 --goal 1.75 1.5 0.0 --map "rigid\_polygons.npy"
+python car\_2.py --start 0.5 0.25 0 --goal 1.75 1.5 0.0 --map "rigid\_polygons.npy" \newline 
+
+Another thing to note is that, since RRT is probabilistically complete, if we let RRT run with no limit on the number of iterations, it will eventually find a solution(i.e. a path from start to the goal vertex). However, to compare whether a solution can be found across different values of $b$, I wanted to put a maximum limit on the number of iterations we run. \newline 
+
+I set the maximum limit for the number of iterations as 1000
 
 \begin{table}
   \centering
@@ -488,14 +490,16 @@ python car\_2.py --start 0.5 0.25 0 --goal 1.75 1.5 0.0 --map "rigid\_polygons.n
   \hline
   Trial \# & b = 1 & b = 3 & b = 5 \\
   \hline
-  1 & (1, 2, 3) & (4, 5, 6) & (6, 7, 8) \\
-  2 & (1, 2, 3) & (4, 5, 6) & (6, 7, 8) \\
-  3 & (1, 2, 3) & (4, 5, 6) & (6, 7, 8) \\
-  4 & (1, 2, 3) & (4, 5, 6) & (6, 7, 8) \\
-  5 & (1, 2, 3) & (4, 5, 6) & (6, 7, 8) \\
+  1 & (0, 8.1496, 240) & (0, 4.097, 241.334) & (6, 7, 8) \\
+  2 & (1, 6.9170, 113.377) & (1, 4.796, 98.556) & (6, 7, 8) \\
+  3 & (1, 7.1061, 138.235) & (0, 5.318, 242.21) & (6, 7, 8) \\
+  4 & (1, 6.4585, 121.6840) & (4, 5, 6) & (6, 7, 8) \\
+  5 & (1, 5.091, 82.3724) & (4, 5, 6) & (6, 7, 8) \\
   \hline
 \end{tabular} 
 \caption{Table for Scene 1}
   \label{tab:mytable}
 \end{table}
+
+\subsubsection{Analysis}
 \end{document}
