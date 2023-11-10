@@ -49,5 +49,5 @@ print("Path:", path)
 
 #Generate Animation
 if len(path) > 0:
-    rrt.animation = FuncAnimation(f, rrt.update_animation_configuration, frames = range(0, path.size), blit = True, interval = 800)
+    rrt.animation = FuncAnimation(f, rrt.update_animation_configuration, frames = range(0, path.size), init_func = rrt.init_animation_configuration, blit = True, interval = 800, repeat = False)
 plt.show()

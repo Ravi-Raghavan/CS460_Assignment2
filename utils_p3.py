@@ -337,6 +337,25 @@ class Car:
         self.top_left_wheel_patch.set_xy(wheels[2])
         self.top_right_wheel_patch.set_xy(wheels[3])
         self.f.canvas.draw()
+        
+    #Function to initialize configuration
+    def init_animation_configuration(self):                
+        self.rotation_points = np.vstack((self.rotation_points, self.configuration[:2]))
+        self.path.set_data(self.rotation_points.T)
+        
+        self.ax.set_aspect("equal")
+        
+        rigid_body = self.generate_rigid_body_from_configuration(self.configuration)
+        wheels = self.generate_wheels_from_configuration(self.configuration)
+        
+        self.patch.set_xy(rigid_body)
+        self.bottom_left_wheel_patch.set_xy(wheels[0])
+        self.bottom_right_wheel_patch.set_xy(wheels[1])
+        
+        self.top_left_wheel_patch.set_xy(wheels[2])
+        self.top_right_wheel_patch.set_xy(wheels[3])
+        
+        return self.patch, self.bottom_left_wheel_patch, self.bottom_right_wheel_patch, self.top_left_wheel_patch, self.top_right_wheel_patch, self.path
     
     #Update configuration at next time step
     def animation_update_configuration(self, frame):

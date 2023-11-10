@@ -39,5 +39,5 @@ if len(a_star_path) > 0:
 
 #Generate Animation
 if len(a_star_path) > 0:
-    prm.animation = FuncAnimation(f, prm.update_animation_configuration, frames = range(0, a_star_path.size), blit = True, interval = 800)
+    prm.animation = FuncAnimation(f, prm.update_animation_configuration, frames = range(0, a_star_path.size), init_func = prm.init_animation_configuration, blit = True, interval = 800, repeat = False)
 plt.show()

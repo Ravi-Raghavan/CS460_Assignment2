@@ -28,10 +28,10 @@ if start_state != None and isinstance(start_state, list) and len(start_state) ==
     car.set_state(x, y, theta)
     car.set_control_input(v, phi)
     
-    ani = FuncAnimation(f, car.animation_update_configuration, frames=range(1, 500), blit = True, interval=10, repeat = False)
+    ani = FuncAnimation(f, car.animation_update_configuration, frames=range(1, 500), init_func = car.init_animation_configuration, blit = True, interval=10, repeat = False)
     plt.show()
 else:
     car = Car(f, ax, None, randomize_configuration = True)
     car.set_control_input(v, phi)
-    ani = FuncAnimation(f, car.animation_update_configuration, frames=range(1, 500), blit = True, interval=10, repeat = False)
+    ani = FuncAnimation(f, car.animation_update_configuration, frames=range(1, 500), init_func = car.init_animation_configuration, blit = True, interval=10, repeat = False)
     plt.show()

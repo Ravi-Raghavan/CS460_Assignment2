@@ -97,6 +97,7 @@ class RigidBody:
         self.start_configuration = starting_configuration
         self.goal_configuration = goal_configuration
         self.timesteps = timesteps
+        
         if isinstance(self.start_configuration, np.ndarray):
             rigid_body = self.generate_rigid_body_from_configuration(self.start_configuration)
             self.patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
@@ -144,6 +145,32 @@ class RigidBody:
                 sampled_configurations.append(configuration)
         
         return np.array(sampled_configurations)
+    
+    #Function reponsible for initializing animation
+    def init_animation_configuration(self):
+        configuration = self.start_configuration
+        #Generate Rigid Body from Configuration and Plot in Workspace        
+        rigid_body = self.generate_rigid_body_from_configuration(configuration)  
+        
+        if hasattr(self, 'patch'):      
+            self.patch.set_xy(rigid_body)
+        else:
+            self.patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
+
+        # Plot Centroid of rectangle
+        if hasattr(self, 'body_centroid'):      
+            self.body_centroid[0].set_data([configuration[0], configuration[1]])
+            self.centroid_points = np.vstack((self.centroid_points, configuration[:2]))
+            self.path.set_data(self.centroid_points.T)
+        else:
+            self.body_centroid = self.ax.plot(configuration[0], configuration[1], marker='o', markersize=3, color="green")
+            self.centroid_points = np.empty(shape = (0, 2))
+            self.centroid_points = np.vstack((self.centroid_points, configuration[:2]))
+            self.path = Line2D(self.centroid_points[:, 0].flatten(), self.centroid_points[:, 1].flatten())
+            
+        print(f"Centroid Points: {self.centroid_points}")
+        
+        return self.patch, self.path,
     
     #Function responsible for plotting a configuration
     def update_animation_configuration(self, frame):
@@ -316,11 +343,25 @@ class RRT:
         configurationA, configurationB = configurationA.flatten(), configurationB.flatten()
         return configurationA[0] == configurationB[0] and configurationA[1] == configurationB[1] and configurationA[2] == configurationB[2]
     
+    #Function Responsible for initializing configuration
+    def init_animation_configuration(self):
+        configuration = self.vertices[self.rrt_path[0]]
+        rigid_body = self.rigid_body.generate_rigid_body_from_configuration(configuration)
+        
+        self.patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
+        self.rigid_body.ax.add_patch(self.patch)
+        
+        self.centroid_points = np.vstack((self.centroid_points, configuration[:2]))
+        self.path = Line2D(self.centroid_points[:, 0].flatten(), self.centroid_points[:, 1].flatten())
+        self.rigid_body.ax.add_line(self.path)
+        
+        self.body_centroid[0].set_data([configuration[0], configuration[1]])
+        
+        self.frame_number = 0
+        return self.patch, self.path, self.body_centroid[0]
+    
     #Function responsible for plotting a configuration
     def update_animation_configuration(self, frame):        
-        if frame < self.frame_number:
-            self.animation.event_source.stop()
-        
         configuration = self.vertices[self.rrt_path[frame]]
         rigid_body = self.rigid_body.generate_rigid_body_from_configuration(configuration)
         
@@ -556,11 +597,25 @@ class PRM:
         
         return 0.7 * dt + 0.3 * dr
     
+    #Function Responsible for Initializing Configuration
+    def init_animation_configuration(self):
+        configuration = self.vertices[self.prm_path[0]]
+        rigid_body = self.rigid_body.generate_rigid_body_from_configuration(configuration)
+        
+        self.patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
+        self.rigid_body.ax.add_patch(self.patch)
+        
+        self.centroid_points = np.vstack((self.centroid_points, configuration[:2]))
+        self.path = Line2D(self.centroid_points[:, 0].flatten(), self.centroid_points[:, 1].flatten())
+        self.rigid_body.ax.add_line(self.path)
+        
+        self.body_centroid[0].set_data([configuration[0], configuration[1]])
+        
+        self.frame_number = 0
+        return self.patch, self.path, self.body_centroid[0]
+    
     #Function responsible for plotting a configuration
     def update_animation_configuration(self, frame):        
-        if frame < self.frame_number:
-            self.animation.event_source.stop()
-        
         configuration = self.vertices[self.prm_path[frame]]
         rigid_body = self.rigid_body.generate_rigid_body_from_configuration(configuration)
         
