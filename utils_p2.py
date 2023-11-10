@@ -290,7 +290,7 @@ class RRT:
         closest_vertex = self.vertices[closest_vertex_index].flatten()
         
         #Check path from closest_vertex to vertex
-        timesteps = 25
+        timesteps = 100
         valid_path_found = False
         current_configuration = closest_vertex
         
@@ -471,7 +471,7 @@ class PRM:
         vertexB = vertexB.flatten()
         
         #Check path from vertexA to vertexB
-        timesteps = 25
+        timesteps = 100
         is_valid_path = True
         current_configuration = vertexA
         

@@ -34,14 +34,22 @@ print("Map File: ", rigid_polygons_file)
 rrt = RRT(start, goal, rigid_body)
 
 #Finished Creating RRT
+probability = 0.05
+iterations = 1
+
 while P < N:
-    configuration = rigid_body.sample_configuration_collision_free(1)[0]    
+    configuration = rigid_body.sample_configuration_collision_free(1)[0] 
+    uniform_sampled_number = np.random.uniform(0, 1)
+    
+    configuration = goal if uniform_sampled_number < probability else configuration   
     added_successfully = rrt.add_vertex(configuration)
     
     P = P + 1 if added_successfully else P
     
-    if P % 100 == 0:
-        print(f"FINISHED P = {P}")
+    if P % 10 == 0:
+        print(f"FINISHED P = {P}, Uniform Distribution Number: {uniform_sampled_number}, Probability: {probability}")
+    
+    iterations = iterations + 1
 
 path = rrt.generate_path()
 
