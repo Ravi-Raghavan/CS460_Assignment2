@@ -177,8 +177,11 @@ class RigidBody:
     
     #Function responsible for plotting a configuration
     def update_animation_configuration(self, frame):
+        configuration = self.animation_configuration
+        
         self.start_configuration = self.start_configuration.flatten()
-        self.goal_configuration = self.goal_configuration.flatten()        
+        self.goal_configuration = self.goal_configuration.flatten()
+                
         dConfiguration = (self.goal_configuration - self.start_configuration) / self.timesteps
         
         DeltaTheta = self.goal_configuration[2] - self.start_configuration[2]
@@ -189,12 +192,6 @@ class RigidBody:
             
         dTheta = DeltaTheta / self.timesteps
         dConfiguration[2] = dTheta
-        
-        self.animation_configuration += dConfiguration
-        
-        #Make sure config angle is within range
-        self.animation_configuration[2] =  self.animation_configuration[2] - (2 * np.pi * (np.floor(( self.animation_configuration[2] + np.pi) / (2 * np.pi))))
-        configuration = self.animation_configuration
         
         #Generate Rigid Body from Configuration and Plot in Workspace        
         rigid_body = self.generate_rigid_body_from_configuration(configuration)  
@@ -216,6 +213,12 @@ class RigidBody:
             self.path = Line2D(self.centroid_points[:, 0].flatten(), self.centroid_points[:, 1].flatten())
             
         print(f"Centroid Points: {self.centroid_points}")
+        
+        #Set configuration for next frame
+        self.animation_configuration += dConfiguration
+        
+        #Make sure config angle is within range
+        self.animation_configuration[2] =  self.animation_configuration[2] - (2 * np.pi * (np.floor(( self.animation_configuration[2] + np.pi) / (2 * np.pi))))        
         return self.patch, self.path, self.body_centroid[0]
     
     def plot_configuration(self, configuration, color = 'r'):
