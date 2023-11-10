@@ -49,10 +49,10 @@ print(configurations)
 
 #Convert to Radians
 thetas = configurations[:, 2].flatten()
-theta = np.deg2rad(thetas)
+thetas = np.deg2rad(thetas)
 
 #Put in range [-pi, pi]
-theta = theta - (2 * np.pi * (np.floor((theta + np.pi) / (2 * np.pi))))
+thetas = thetas - (2 * np.pi * (np.floor((thetas + np.pi) / (2 * np.pi))))
 
 #Put them back in configurations
 configurations[:, 2] = thetas
