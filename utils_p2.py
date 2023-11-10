@@ -352,7 +352,8 @@ class RRT:
     #The path are indices so its easier
     def generate_path(self):
         if not self.sampled_goal:
-            self.add_vertex(self.goal)
+            print("We have not sampled the goal vertex. Cannot find Path")
+            return np.empty(shape = (0,0))
             
         path = [self.goal_index]
         current_configuration = self.goal.flatten()
