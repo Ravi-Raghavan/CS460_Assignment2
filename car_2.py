@@ -11,11 +11,21 @@ parser = argparse.ArgumentParser(description="Receive Command Line Arguments for
 parser.add_argument("--start", nargs = 3, type = float, help = "Start Configuration")
 parser.add_argument("--goal", nargs = 3, type = float, help = "Goal Configuration")
 parser.add_argument("--map", nargs = 1, type = str, help = "Map of Rigid Polygons")
+parser.add_argument("--b", nargs = 1, type = int, help = "Value of b")
 args = parser.parse_args()
 
 start = np.array([args.start[0], args.start[1], args.start[2]])
 goal = np.array([args.goal[0], args.goal[1], args.goal[2]])
 rigid_polygons_file = args.map[0]
+b = args.b
+
+if b == None:
+    print("No b was passed in as a command line argument. Resorting to default of 1")
+    b = 1
+else:
+    b = b[0]
+    
+print(f"Value of b is {b}")
 
 #Define our car 
 car = Car(f, ax, rigid_polygons_file, False, start, enable_keyboard_control = False)
