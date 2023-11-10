@@ -1,5 +1,7 @@
 import argparse
+import numpy as np
 from matplotlib.animation import FuncAnimation
+from utils_p1 import compute_distance
 import utils_p1 as utl
     
 # moves arm from start to goal configuration
@@ -9,7 +11,7 @@ def move(arm, start,goal):
     distance2 = utl.angle_difference(start[1],goal[1])
     step1 = distance1/20
     step2 = distance2/20
-
+ 
     # create animation
     def update(frame):
         utl.plt.cla()
@@ -38,9 +40,10 @@ def main():
     # store arguments
     start = args.start
     goal = args.goal
+    lengths = [0.3,0.15]
 
     # initialize robot at starting orientation
-    arm = utl.RobotArm('None', [0.3,0.15], [start[0], start[1]], joint_radius=0.05, link_width=0.1)
+    arm = utl.RobotArm('None', lengths, [start[0], start[1]], joint_radius=0.05, link_width=0.1)
 
     # move arm from start to goal
     move(arm, start, goal)

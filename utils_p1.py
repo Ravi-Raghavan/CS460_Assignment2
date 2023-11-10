@@ -262,7 +262,7 @@ def collides_optimized(poly1, poly2):
 ##################### ADDITIONAL FUNCTIONS ###################################
 ##############################################################################
 def angle_difference(angle1, angle2):
-    # Calculate the absolute difference between the angles
+    # Calculate the difference between the angles
     difference = abs(angle1 - angle2)
     
     # Ensure the result is within the [0, 2π] range
@@ -275,6 +275,16 @@ def normalize_angle(angle):
     normalized_angle = angle%(2*np.pi)
     return normalized_angle
 
+# compute distance between two configurations
+def compute_distance(target, neighbor): 
+    joint1_distance = abs(normalize_angle(neighbor[0])-normalize_angle(target[0]))
+    joint2_distance = abs(normalize_angle(neighbor[1])-normalize_angle(target[1]))
+    
+    joint1 = min(joint1_distance, 2*np.pi-joint1_distance)
+    joint2 = min(joint2_distance, 2*np.pi-joint2_distance)
 
+    return [joint1, joint2]
 
-        
+# compute norm of joint angle distances
+def compute_norm(joints):
+     return np.sqrt(joints[0]**2+joints[1]**2)
