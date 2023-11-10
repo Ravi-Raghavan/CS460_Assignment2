@@ -449,4 +449,53 @@ The problem description denotes $L = 0.2$. Now, all the necessary information is
 % SECTION 3.3
 \subsection{RTT and Planning with Dynamics}
 
+\begin{algorithm}
+\caption{Modified RRT For Non-Holonomic Car}
+\begin{algorithmic}
+\STATE {Randomly sample configurations $q_{rand}$ and identify the closest node $q_{close}$ on the tree to the random sample $q_{rand}$. Occasionally, the goal configuration will be sampled in order to assist RRT in finding a solution (e.g., 5 \% of the time).} \newline 
+
+\STATE {Instead of trying to connect with an edge the closest node $q_{close}$ to the random sample $q_{rand}$, in this version of RRT, a blossom b of random controls $\{u_1, \ldots , u_b\}$ are sampled.} \newline 
+
+\STATE {For each of the b sampled controls $u_i$, you integrate forward in time the dynamics from the closest node $q_{close}$ for the same duration $\Delta T$. This results in b possible new states $\{q_{new}^1, \ldots, q_{new}^b \}$ that are reachable from $q_{close}$. Accept a new state only if the integration of the dynamics for time $\Delta T$ does not result in a collision.} \newline 
+
+\STATE{Check the distance between all the new states $\{q_{new}^1, \ldots, q_{new}^b \}$ to the random sample $q_{rand}$ and identify which state $q_{cn}$ among them is the closest to $q_{rand}$ given the distance metric in this configuration space.}
+
+\STATE{add the edge from $q_{close}$ to $q_{cn}$ and store the corresponding control on the edge.}
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Experimentation}
+To experiment with different design choices, my strategy was to change the value of $b$ and observe the success rate of the RRT Algorithm, the resulting path quality of the path returned by the RRT Algorithm, and the overall computational cost. 
+
+I have run these experiments on various polygonal scenes. For each polygonal scene, I ran 5 trials for different values of $b$(i.e. 1, 3, and 5). For each trial on each value of $b$, I report a tuple $(i, j, k_1, k_2)$ \newline 
+
+$i = 0$ if we could NOT find a successful path from the start to the goal region. $i = 1$ if we could find a successful path from the start to the goal region. \newline 
+
+$j$ is equal to the total path distance as computed by the distance metric in this configuration space \newline 
+
+$k_1$ is the time required to build the RRT \newline 
+
+$k_2$ is the time required to generate the actual path from the RRT \newline 
+
+Scene 1: $rigid\_polygons.npy$
+
+For each experiment, I ran: \newline 
+python car\_2.py --start 0.5 0.25 0 --goal 1.75 1.5 0.0 --map "rigid\_polygons.npy"
+
+\begin{table}
+  \centering
+\begin{tabular}{|c|c|c|c|}
+  \hline
+  Trial \# & b = 1 & b = 3 & b = 5 \\
+  \hline
+  1 & (1, 2, 3) & (4, 5, 6) & (6, 7, 8) \\
+  2 & (1, 2, 3) & (4, 5, 6) & (6, 7, 8) \\
+  3 & (1, 2, 3) & (4, 5, 6) & (6, 7, 8) \\
+  4 & (1, 2, 3) & (4, 5, 6) & (6, 7, 8) \\
+  5 & (1, 2, 3) & (4, 5, 6) & (6, 7, 8) \\
+  \hline
+\end{tabular} 
+\caption{Table for Scene 1}
+  \label{tab:mytable}
+\end{table}
 \end{document}
