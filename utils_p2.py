@@ -362,6 +362,7 @@ class RRT:
             self.goal = self.vertices[closest_vertex_index].flatten()
             
             #New Goal
+            np.set_printoptions(precision=15)
             print(f"The closest Node we could find to the goal node was {self.goal}")
         
             
