@@ -97,6 +97,7 @@ class RigidBody:
         self.start_configuration = starting_configuration
         self.goal_configuration = goal_configuration
         self.timesteps = timesteps
+        self.animation_configuration = self.start_configuration
         
         if isinstance(self.start_configuration, np.ndarray):
             rigid_body = self.generate_rigid_body_from_configuration(self.start_configuration)
@@ -137,10 +138,10 @@ class RigidBody:
             configuration = np.array([np.random.uniform(0, 2), np.random.uniform(0, 2), np.random.uniform(-1 * np.pi, np.pi)])
             
             #Generate Rigid Body from Configuration            
-            rigid_body = self.generate_rigid_body_from_configuration(configuration)
+            rigid_body_workspace = self.generate_rigid_body_from_configuration(configuration)
             
             #If the rigid body does not collide with anything in the workspace, we have sampled a valid configuration in free C-space
-            if (not self.check_rigid_body_collision(rigid_body)):
+            if (not self.check_rigid_body_collision(rigid_body_workspace)):
                 P = P + 1
                 sampled_configurations.append(configuration)
         
@@ -148,14 +149,16 @@ class RigidBody:
     
     #Function reponsible for initializing animation
     def init_animation_configuration(self):
+        self.animation_configuration = self.start_configuration
         configuration = self.start_configuration
+        
         #Generate Rigid Body from Configuration and Plot in Workspace        
-        rigid_body = self.generate_rigid_body_from_configuration(configuration)  
+        rigid_body_workspace = self.generate_rigid_body_from_configuration(configuration)  
         
         if hasattr(self, 'patch'):      
-            self.patch.set_xy(rigid_body)
+            self.patch.set_xy(rigid_body_workspace)
         else:
-            self.patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
+            self.patch = matplotlib.patches.Polygon(rigid_body_workspace, closed=True, facecolor = 'none', edgecolor='r')
 
         # Plot Centroid of rectangle
         if hasattr(self, 'body_centroid'):      
@@ -170,11 +173,29 @@ class RigidBody:
             
         print(f"Centroid Points: {self.centroid_points}")
         
-        return self.patch, self.path,
+        return self.patch, self.path, self.body_centroid[0]
     
     #Function responsible for plotting a configuration
     def update_animation_configuration(self, frame):
-        configuration = self.start_configuration + ((self.goal_configuration - self.start_configuration) * frame / self.timesteps)
+        self.start_configuration = self.start_configuration.flatten()
+        self.goal_configuration = self.goal_configuration.flatten()        
+        dConfiguration = (self.goal_configuration - self.start_configuration) / self.timesteps
+        
+        DeltaTheta = self.goal_configuration[2] - self.start_configuration[2]
+        if DeltaTheta > np.pi:
+            DeltaTheta = DeltaTheta - (2 * np.pi)
+        elif DeltaTheta < -1 * np.pi:
+            DeltaTheta = (2 * np.pi) - DeltaTheta
+            
+        dTheta = DeltaTheta / self.timesteps
+        dConfiguration[2] = dTheta
+        
+        self.animation_configuration += dConfiguration
+        
+        #Make sure config angle is within range
+        self.animation_configuration[2] =  self.animation_configuration[2] - (2 * np.pi * (np.floor(( self.animation_configuration[2] + np.pi) / (2 * np.pi))))
+        configuration = self.animation_configuration
+        
         #Generate Rigid Body from Configuration and Plot in Workspace        
         rigid_body = self.generate_rigid_body_from_configuration(configuration)  
         
@@ -195,8 +216,7 @@ class RigidBody:
             self.path = Line2D(self.centroid_points[:, 0].flatten(), self.centroid_points[:, 1].flatten())
             
         print(f"Centroid Points: {self.centroid_points}")
-        
-        return self.patch, self.path,
+        return self.patch, self.path, self.body_centroid[0]
     
     def plot_configuration(self, configuration, color = 'r'):
         #Generate Rigid Body from Configuration and Plot in Workspace        
@@ -271,22 +291,35 @@ class RRT:
         
         #Check path from closest_vertex to vertex
         timesteps = 25
-        new_vertex = None
         valid_path_found = False
+        current_configuration = closest_vertex
+        
         for timestep in range(1, timesteps + 1):
-            configuration = closest_vertex + ((vertex - closest_vertex) * timestep / timesteps)
-            if self.rigid_body.check_rigid_body_collision(self.rigid_body.generate_rigid_body_from_configuration(configuration)):
+            dConfiguration = ((vertex - closest_vertex) / timesteps)
+            
+            DeltaTheta = vertex[2] - closest_vertex[2]
+            if DeltaTheta > np.pi:
+                DeltaTheta = DeltaTheta - (2 * np.pi)
+            elif DeltaTheta < -1 * np.pi:
+                DeltaTheta = (2 * np.pi) - DeltaTheta
+                
+            dTheta = DeltaTheta / self.timesteps
+            dConfiguration[2] = dTheta
+        
+            next_configuration = current_configuration + dConfiguration
+            
+            #Make angle within range
+            next_configuration[2] = next_configuration[2] - (2 * np.pi * (np.floor((next_configuration[2] + np.pi) / (2 * np.pi))))
+            
+            if self.rigid_body.check_rigid_body_collision(self.rigid_body.generate_rigid_body_from_configuration(next_configuration)):
                 break
             else:
-                new_vertex = configuration
                 valid_path_found = True
-        
-        #Flatten if applicable
-        new_vertex = new_vertex.flatten() if isinstance(new_vertex, np.ndarray) else new_vertex
+                current_configuration = next_configuration
         
         #If we found valid path, add to graph
         if valid_path_found:            
-            self.vertices = np.append(self.vertices, new_vertex.reshape((1, new_vertex.shape[0])), axis = 0)
+            self.vertices = np.append(self.vertices, current_configuration.reshape((1, current_configuration.shape[0])), axis = 0)
             self.edges = np.vstack((self.edges, np.zeros(shape = (1, self.edges.shape[1]))))
             self.edges = np.hstack((self.edges, np.zeros(shape = (self.edges.shape[0], 1))))
             
@@ -294,7 +327,8 @@ class RRT:
             self.edges[-1, closest_vertex_index] = 1  
             
             self.predecessor[len(self.vertices) - 1] = closest_vertex_index
-            if new_vertex[0] == self.goal[0] and new_vertex[1] == self.goal[1] and new_vertex[2] == self.goal[2]:
+            
+            if current_configuration[0] == self.goal[0] and current_configuration[1] == self.goal[1] and current_configuration[2] == self.goal[2]:
                 self.sampled_goal = True
                 self.goal_index = len(self.vertices) - 1
         
@@ -438,12 +472,30 @@ class PRM:
         #Check path from vertexA to vertexB
         timesteps = 25
         is_valid_path = True
+        current_configuration = vertexA
         
         for timestep in range(1, timesteps + 1):
-            configuration = vertexA + ((vertexB - vertexA) * timestep / timesteps)
-            if self.rigid_body.check_rigid_body_collision(self.rigid_body.generate_rigid_body_from_configuration(configuration)):
+            dConfiguration = ((vertexB - vertexA) / timesteps)
+            
+            DeltaTheta = vertexB[2] - vertexA[2]
+            if DeltaTheta > np.pi:
+                DeltaTheta = DeltaTheta - (2 * np.pi)
+            elif DeltaTheta < -1 * np.pi:
+                DeltaTheta = (2 * np.pi) - DeltaTheta
+                
+            dTheta = DeltaTheta / self.timesteps
+            dConfiguration[2] = dTheta
+            
+            next_configuration = current_configuration + dConfiguration
+            
+            #Make angle within range
+            next_configuration[2] = next_configuration[2] - (2 * np.pi * (np.floor((next_configuration[2] + np.pi) / (2 * np.pi))))
+
+            if self.rigid_body.check_rigid_body_collision(self.rigid_body.generate_rigid_body_from_configuration(next_configuration)):
                 is_valid_path = False
                 break
+            
+            current_configuration = next_configuration
         
         return is_valid_path
 
@@ -567,10 +619,6 @@ class PRM:
     def H(self, node, goal):
         point = goal - node
         
-        #Set of diameter and radius
-        diameter = np.linalg.norm(np.array([0.1, 0.2])) #Diameter of Circle in which the rigid body is inscribed
-        radius = 0.5 * diameter #Radius of Circle in which the rigid body is inscribed
-        
         #Flatten
         point = point.flatten()
         
@@ -579,7 +627,7 @@ class PRM:
         
         #Calculate Rotational Distance
         angle = point[-1]
-        dr = radius * angle
+        dr = min(abs(angle), 2 * np.pi - abs(angle))
         
         return 0.7 * dt + 0.3 * dr
     
