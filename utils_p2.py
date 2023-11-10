@@ -303,7 +303,7 @@ class RRT:
             elif DeltaTheta < -1 * np.pi:
                 DeltaTheta = (2 * np.pi) - DeltaTheta
                 
-            dTheta = DeltaTheta / self.timesteps
+            dTheta = DeltaTheta / timesteps
             dConfiguration[2] = dTheta
         
             next_configuration = current_configuration + dConfiguration
@@ -483,7 +483,7 @@ class PRM:
             elif DeltaTheta < -1 * np.pi:
                 DeltaTheta = (2 * np.pi) - DeltaTheta
                 
-            dTheta = DeltaTheta / self.timesteps
+            dTheta = DeltaTheta / timesteps
             dConfiguration[2] = dTheta
             
             next_configuration = current_configuration + dConfiguration
