@@ -391,23 +391,23 @@ class RRT:
         while not self.equal(current_configuration, self.start):
             next_configuration_index = self.predecessor.get(current_configuration_index, None)
             
-            dConfiguration = self.configuration_derivatives_information[(next_configuration_index, current_configuration_index)]
+            dConfiguration = self.configuration_derivatives_information[(next_configuration_index, current_configuration_index)].flatten()
             timestep = self.timestep_information[(next_configuration_index, current_configuration_index)]
             
             if next_configuration_index == None: 
                 return np.empty(shape = (0,0)), np.empty(shape = (0,0)), np.empty(shape = (0,0))
             
             path.append(next_configuration_index)
-            current_configuration = self.vertices[next_configuration_index]
-            current_configuration_index = next_configuration_index
-            
             configuration_derivatives.append(dConfiguration)
             timestep_array.append(timestep)
+            
+            current_configuration = self.vertices[next_configuration_index]
+            current_configuration_index = next_configuration_index
         
         path = np.flip(np.array(path))
         self.rrt_path = path     
         
-        configuration_derivatives = np.flip(np.array(configuration_derivatives))
+        configuration_derivatives = np.flip(np.array(configuration_derivatives), axis = 0)
         timestep_array = np.flip(np.array(timestep_array))
         
         self.configuration_derivatives = configuration_derivatives
@@ -461,6 +461,8 @@ class RRT:
         
         rigid_body = self.rigid_body.generate_rigid_body_from_configuration(configuration)
         
+        # print(f"Frame: {frame}, Configuration: {configuration}, Time Step Index: {time_step_index}")
+        
         self.patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
         self.rigid_body.ax.add_patch(self.patch)
         
@@ -481,8 +483,7 @@ class RRT:
         self.animation_configuration += dConfiguration
         self.animation_configuration[2] = self.animation_configuration[2] - (2 * np.pi * (np.floor((self.animation_configuration[2] + np.pi) / (2 * np.pi))))
         
-        print(f"Frame: {frame}, Configuration: {configuration}, Time Step Index: {time_step_index}")
-        print(f"[2]Frame: {frame}, Original Configuration: {original_configuration}, Next Computed Configuration: {self.animation_configuration}")
+        # print(f"[2]Frame: {frame}, Original Configuration: {original_configuration}, Next Computed Configuration: {self.animation_configuration}")
 
         return self.patch, self.path, self.body_centroid[0]
             
@@ -494,16 +495,19 @@ class PRM:
         self.vertices = np.empty(shape = (0, 3))
         self.edges = np.empty(shape = (0,0))
         
-        #Generate Roadmap
-        self.generate_roadmap(N)
-                
         #Set up Animation Stuff
         #Animation Object
         self.animation = None
+        self.configuration_derivatives_information = dict()
+        self.timestep_information = dict()
+        self.animation_configuration = None
         
         #Centroid Points
         self.centroid_points = np.empty(shape = (0, 2))
         self.frame_number = 0
+        
+        #Generate Roadmap
+        self.generate_roadmap(N)
     
     #Generate Roadmap
     def generate_roadmap(self, N):
@@ -535,9 +539,15 @@ class PRM:
             
             #Try to add edges to neighbor nodes if possible
             for neighbor_index in neighbor_indices:
-                if self.is_edge_valid(target_configuration, self.vertices[neighbor_index]):
+                if self.is_edge_valid(self.vertices[neighbor_index], target_configuration):
                     self.edges[index, neighbor_index] = 1
                     self.edges[neighbor_index, index] = 1
+                    
+                    self.configuration_derivatives_information[(neighbor_index, index)] = self.current_derivative_configuration
+                    self.configuration_derivatives_information[(index, neighbor_index)] = -1 * self.current_derivative_configuration
+                    
+                    self.timestep_information[(neighbor_index, index)] = self.current_timesteps_used
+                    self.timestep_information[(index, neighbor_index)] = self.current_timesteps_used
                             
     #Tell if Edge is valid based on collision checking in workspace
     def is_edge_valid(self, vertexA, vertexB):
@@ -548,6 +558,10 @@ class PRM:
         timesteps = 100
         is_valid_path = True
         current_configuration = vertexA
+        
+        #Store integration information
+        derivative_configuration = 0
+        timesteps_used = 0
         
         for timestep in range(1, timesteps + 1):
             dConfiguration = ((vertexB - vertexA) / timesteps)
@@ -569,13 +583,22 @@ class PRM:
             if self.rigid_body.check_rigid_body_collision(self.rigid_body.generate_rigid_body_from_configuration(next_configuration)):
                 is_valid_path = False
                 break
+            else:
+                derivative_configuration = dConfiguration
+                timesteps_used += 1
             
             current_configuration = next_configuration
+        
+        if is_valid_path:
+            self.current_derivative_configuration = derivative_configuration
+            self.current_timesteps_used = timesteps_used
         
         return is_valid_path
 
     #Shortest path from start -> goal
     def answer_query(self, start, goal):
+        self.start = start
+        self.goal = goal
         print(f"Going to Answer Query for Start: {start}, Goal: {goal}")
         k = 3
         target_configurations = [start, goal]
@@ -589,21 +612,28 @@ class PRM:
             self.edges = np.hstack((self.edges, np.zeros(shape = (self.edges.shape[0], 1))))
             
             print(f"Number of Neighboring Indices: {len(neighbor_indices)}")
+            index = len(self.vertices) - 1
             
             for neighbor_index in neighbor_indices:
-                if self.is_edge_valid(target_configuration, self.vertices[neighbor_index]):
+                if self.is_edge_valid(self.vertices[neighbor_index], target_configuration):
                     print("VALID EDGE")
                     self.edges[-1, neighbor_index] = 1
                     self.edges[neighbor_index, -1] = 1
+                    
+                    self.configuration_derivatives_information[(neighbor_index, index)] = self.current_derivative_configuration
+                    self.configuration_derivatives_information[(index, neighbor_index)] = -1 * self.current_derivative_configuration
+                    
+                    self.timestep_information[(neighbor_index, index)] = self.current_timesteps_used
+                    self.timestep_information[(index, neighbor_index)] = self.current_timesteps_used
         
         #RUN SEARCH ALGORITHM HERE
-        a_star_path_cost, a_star_path = self.A_star(start, goal)
+        a_star_path_cost, a_star_path, configuration_derivatives, timestep_array = self.A_star(start, goal)
         self.prm_path = a_star_path
         
         #Set up centroid of rigid body
         self.body_centroid = self.rigid_body.ax.plot(start[0], start[1], marker='o', markersize=3, color="green")
         
-        return a_star_path_cost, a_star_path
+        return a_star_path_cost, a_star_path, configuration_derivatives, timestep_array
      
     #A Star Search Algorithm.          
     def A_star(self, start, goal):
@@ -675,20 +705,34 @@ class PRM:
                     in_fringe[child_index] = 1
                     parents[child_index] = node_index
         
-        #Retrieve the actual A* Path
+        #Retrieve the actual A* Path, configuration derivatives, and timesteps
         current_node = goal_index
         a_star_path = [goal_index]
+        configuration_derivatives = []
+        timestep_array = []
+        
         while current_node != start_index:
             next_index = parents[current_node]
             if next_index == -1:
                 a_star_path = []
                 break
             
+            dConfiguration = self.configuration_derivatives_information[(next_index, current_node)].flatten()
+            timestep = self.timestep_information[(next_index, current_node)]
+            
+            configuration_derivatives.append(dConfiguration)
+            timestep_array.append(timestep)
+            
             a_star_path.append(next_index)
             current_node = next_index  
         
-        a_star_path = np.flip(np.array(a_star_path))      
-        return a_star_path_cost, a_star_path
+        a_star_path = np.flip(np.array(a_star_path))     
+        configuration_derivatives = np.flip(np.array(configuration_derivatives), axis = 0)
+        timestep_array = np.flip(np.array(timestep_array))
+        
+        self.configuration_derivatives = configuration_derivatives
+        self.timestep_array = timestep_array
+        return a_star_path_cost, a_star_path, configuration_derivatives, timestep_array
         
     #Heuristic Function for a Node in Configuration Space
     def H(self, node, goal):
@@ -722,7 +766,8 @@ class PRM:
     
     #Function Responsible for Initializing Configuration
     def init_animation_configuration(self):
-        configuration = self.vertices[self.prm_path[0]]
+        self.animation_configuration = self.start
+        configuration = self.animation_configuration
         rigid_body = self.rigid_body.generate_rigid_body_from_configuration(configuration)
         
         self.patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
@@ -738,8 +783,25 @@ class PRM:
         return self.patch, self.path, self.body_centroid[0]
     
     #Function responsible for plotting a configuration
-    def update_animation_configuration(self, frame):        
-        configuration = self.vertices[self.prm_path[frame]]
+    def update_animation_configuration(self, frame):
+        configuration = self.animation_configuration
+        
+        #Compute subsequences sum
+        time_step_index = -1
+        subsequence_total_steps_array = [0]
+        for index in range(len(self.timestep_array)):
+            subsequence_total_steps = np.sum(self.timestep_array[0: index + 1])
+            subsequence_total_steps_array.append(subsequence_total_steps)
+        
+        #Get the time step index
+        for index in range(len(self.timestep_array)):
+            steps = subsequence_total_steps_array[index + 1]
+            prev_steps = subsequence_total_steps_array[index]
+            
+            if prev_steps <= frame and frame < steps:
+                time_step_index = index
+                break
+                    
         rigid_body = self.rigid_body.generate_rigid_body_from_configuration(configuration)
         
         self.patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = 'none', edgecolor='r')
@@ -752,4 +814,14 @@ class PRM:
         self.body_centroid[0].set_data([configuration[0], configuration[1]])
         
         self.frame_number = frame
+        
+        #Update animation configuration for next frame
+        original_configuration = np.zeros(shape = (3,))
+        original_configuration[0] = self.animation_configuration[0]
+        original_configuration[1] = self.animation_configuration[1]
+        original_configuration[2] = self.animation_configuration[2]
+        
+        dConfiguration = self.configuration_derivatives[time_step_index]
+        self.animation_configuration += dConfiguration
+        self.animation_configuration[2] = self.animation_configuration[2] - (2 * np.pi * (np.floor((self.animation_configuration[2] + np.pi) / (2 * np.pi))))
         return self.patch, self.path, self.body_centroid[0]

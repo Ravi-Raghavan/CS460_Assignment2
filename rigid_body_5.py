@@ -30,14 +30,20 @@ print("Map File: ", rigid_polygons_file)
 N = 1000
 prm = PRM(N, rigid_body)
 
-a_star_path_cost, a_star_path = prm.answer_query(start, goal)
+a_star_path_cost, a_star_path, configuration_derivatives, timestep_array = prm.answer_query(start, goal)
 print("Path Cost: ", a_star_path_cost)
 print("PRM Path: ", a_star_path)
+
+print("Configuration Derivatives: ", configuration_derivatives)
+print("Timestep Array: ", timestep_array)
+
 
 if len(a_star_path) > 0:
     print("Configurations: ", prm.vertices[a_star_path])
 
 #Generate Animation
 if len(a_star_path) > 0:
-    prm.animation = FuncAnimation(f, prm.update_animation_configuration, frames = range(0, a_star_path.size), init_func = prm.init_animation_configuration, blit = True, interval = 800, repeat = False)
+    total_timesteps = np.sum(timestep_array)
+    print("Total Timesteps: ", total_timesteps)
+    prm.animation = FuncAnimation(f, prm.update_animation_configuration, frames = range(0, total_timesteps + 1), init_func = prm.init_animation_configuration, blit = True, interval = 30, repeat = False)
     plt.show()
