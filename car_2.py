@@ -20,7 +20,7 @@ rigid_polygons_file = args.map[0]
 car = Car(f, ax, rigid_polygons_file, False, start)
 
 #Define our RRT
-rrt = RRT(start, goal, car, b = 1, num_integrations = 200)
+rrt = RRT(start, goal, car, b = 1, num_integrations = 250)
 
 #Calculate Translational Distance between two configurations
 def Dt(q1, q2):
@@ -52,10 +52,15 @@ P = 0
 reached_goal_region = False
 goal_index = None
 
+probability = 0.05
+iterations = 1
+
 while not reached_goal_region:
-    #Sample Configuration, Pick Goal node with 5% Probability, and add Node to RRT
+    #Sample Configuration, Pick Goal node with 'probability' Probability, and add Node to RRT
     configuration = car.sample_configuration_collision_free(1)[0]    
-    configuration = goal if np.random.uniform(0, 1) < 0.05 else configuration
+    uniform_sampled_number = np.random.uniform(0, 1)
+    
+    configuration = goal if uniform_sampled_number < probability else configuration
     added_successfully, configuration_index = rrt.add_vertex(configuration)
     
     #RRT Vertices
@@ -91,7 +96,12 @@ while not reached_goal_region:
     P = P + 1 if added_successfully else P   
     
     if P % 10 == 0:
-        print(f"P = {P}, Dt = {np.min(dt_values)}, Dr = {np.min(dr_values)}, minDT = {min_translational_distance}, minDR = {min_rotational_distance}, In Goal Region: {reached_goal_region}")
+        print(f"P = {P}, Dt = {np.min(dt_values)}, Dr = {np.min(dr_values)}, minDT = {min_translational_distance}, minDR = {min_rotational_distance}, In Goal Region: {reached_goal_region}, Uniform Distribution Number: {uniform_sampled_number}, Probability: {probability}")
+    
+    if iterations % 250 == 0:
+        probability *= 2
+    
+    iterations = iterations + 1
 
 #Generate Path
 if reached_goal_region:
@@ -105,6 +115,7 @@ if reached_goal_region:
     print(f"Length of Integration Steps Array: {len(integration_steps)}")
     
     total_integration_steps = np.sum(integration_steps)
+    print(f"Total Number of Integration Steps: {total_integration_steps}")
     
-    rrt.animation = FuncAnimation(f, rrt.update_animation_configuration, frames = range(0, total_integration_steps + 1), blit = True, interval = 8, repeat = False)
+    rrt.animation = FuncAnimation(f, rrt.update_animation_configuration, frames = range(0, total_integration_steps + 1), init_func = rrt.init_animation_configuration, blit = True, interval = 20, repeat = False)
     plt.show()

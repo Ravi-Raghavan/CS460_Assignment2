@@ -626,13 +626,63 @@ class RRT:
         configurationA, configurationB = configurationA.flatten(), configurationB.flatten()
         return configurationA[0] == configurationB[0] and configurationA[1] == configurationB[1] and configurationA[2] == configurationB[2]
     
+    #Function for init animation
+    def init_animation_configuration(self):
+        #Set animation configuration to start node
+        self.animation_configuration = self.start
+        configuration = self.animation_configuration
+        
+        #Set control to 1st control in control sequence
+        u = self.control_sequence[0].flatten()
+        self.rigid_body.set_state(configuration[0], configuration[1], configuration[2])
+        self.rigid_body.set_control_input(u[0], u[1])
+        
+        #Get Car and Wheels
+        rigid_body = self.rigid_body.generate_rigid_body_from_configuration(configuration)
+        wheels = self.rigid_body.generate_wheels_from_configuration(configuration)
+        
+        #Update Rigid Body Patch
+        self.rigid_body.patch.set_xy(rigid_body)
+        
+        #Add wheel patches to rigid body figure
+        self.rigid_body.bottom_left_wheel_patch.set_xy(wheels[0])
+        self.rigid_body.bottom_right_wheel_patch.set_xy(wheels[1])
+        self.rigid_body.top_left_wheel_patch.set_xy(wheels[2])
+        self.rigid_body.top_right_wheel_patch.set_xy(wheels[3])
+        
+        #Get Centroid Points and add to rigid body figure
+        self.centroid_points = np.vstack((self.centroid_points, configuration[:2]))
+        self.path = Line2D(self.centroid_points[:, 0].flatten(), self.centroid_points[:, 1].flatten())
+        self.rigid_body.ax.add_line(self.path)
+        self.body_centroid[0].set_data([configuration[0], configuration[1]])
+        
+        return self.rigid_body.patch, self.rigid_body.bottom_left_wheel_patch, self.rigid_body.bottom_right_wheel_patch, self.rigid_body.top_left_wheel_patch, self.rigid_body.top_right_wheel_patch, self.path, self.body_centroid[0]
+    
     #Function responsible for plotting a configuration
     def update_animation_configuration(self, frame):        
         #Get Configuration
-        configuration = self.animation_configuration    
+        configuration = self.animation_configuration.flatten()
         
-        #Get control sequence
-        u = self.control_sequence[min(frame, len(self.control_sequence) - 1)].flatten()
+        #Compute subsequence sum of integration step array
+        integration_step_index = None
+        subsequence_total_steps_array = [-1]
+        for index in range(len(self.integration_steps)):
+            subsequence_total_steps = np.sum(self.integration_steps[0: index + 1])
+            subsequence_total_steps_array.append(subsequence_total_steps)
+        
+        #Get the integration step index
+        for index in range(len(self.integration_steps)):
+            steps = subsequence_total_steps_array[index + 1]
+            prev_steps = subsequence_total_steps_array[index]
+            
+            if prev_steps < frame and frame <= steps:
+                integration_step_index = index
+                break
+        
+        u = self.control_sequence[integration_step_index].flatten()
+        # print(f"Frame: {frame}, Configuration: {configuration}, Integration Step Index: {integration_step_index}, Control: {u}")
+        
+        self.rigid_body.set_state(configuration[0], configuration[1], configuration[2])
         self.rigid_body.set_control_input(u[0], u[1])
         
         #Get Car and Wheels
@@ -657,5 +707,9 @@ class RRT:
         self.frame_number = frame
         
         #Calculate Next Configuration
+        original_configuration = self.rigid_body.configuration
+        self.rigid_body.compute_next_configuration()
+        self.animation_configuration = self.rigid_body.configuration
+        # print(f"[2]Frame: {frame}, Original Configuration: {original_configuration}, Next Computed Configuration: {self.animation_configuration}")
         
         return self.rigid_body.patch, self.rigid_body.bottom_left_wheel_patch, self.rigid_body.bottom_right_wheel_patch, self.rigid_body.top_left_wheel_patch, self.rigid_body.top_right_wheel_patch, self.path, self.body_centroid[0]

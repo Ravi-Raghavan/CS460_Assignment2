@@ -19,3 +19,9 @@ print(np.inf - (100))
 
 A = np.array([[1, 2, 3], [np.inf, np.inf, np.inf]])
 print(A)
+
+F = np.array([1, 2, 3])
+print(F[0: -1])
+
+configurations = np.load("rigid_configs.npy", allow_pickle= True)
+print(configurations)
