@@ -220,7 +220,7 @@ At the end of the process, if I did not find any such gap of the projections ont
 	\label{P2_NearestNeighbor(4).png}
 \end{figure}
 
-\underline{Program Input}: Target Configuration was $[1.5, 1.5, -0.2]$, number of nearest neighbors was 4, and the input list was specified by rigid$\_$configs.npy
+\underline{Program Input}: Target Configuration was $[1, 1.5, -0.2]$, number of nearest neighbors was 4, and the input list was specified by rigid$\_$configs.npy
 
 \newpage
 \begin{figure}[h!]
@@ -230,7 +230,7 @@ At the end of the process, if I did not find any such gap of the projections ont
 	\label{P2_NearestNeighbor(5).png}
 \end{figure}
 
-\underline{Program Input}: Target Configuration was $[1.5, 0.5, -0.5]$, number of nearest neighbors was 5, and the input list was specified by rigid$\_$configs.npy
+\underline{Program Input}: Target Configuration was $[0.4, 0.5, -0.3]$, number of nearest neighbors was 5, and the input list was specified by rigid$\_$configs.npy
 
 \subsubsection{Analysis}
 First, I will explain the distance metric to compute the distance between two configurations and how I went about computing this distance.  \newline 
@@ -242,9 +242,21 @@ Let's say we have two configurations: $(x_1, y_1, \theta_1)$ and $(x_2, y_2, \th
 
 $d_t = \sqrt{(x_2 - x_1)^2 + (y_2 - y_1)^2}$ \newline 
 
-Let $r$ be the radius of the circle that circumscribes the rectangular rigid body. We can state that $r = \sqrt{(\frac{w}{2})^2 + (\frac{h}{2})^2}$ where $w$ is the width of the rectangle and the $h$ is the height of the rectangle \newline 
+Calculating $d_r$ was also rather straightforward but I had to account for the topology here. The topology, for the 2D Rigid Body, was $SE(2)$. Hence, for $\theta$, the angles can "wrap around" in a circle. 
 
-$d_r = r * abs(\theta_2 - \theta_1)$ where abs is the absolute value. 
+Hence, To calculate $d_r$, given $\theta_1$ and $\theta_2$, here is a rough algorithm of what I followed
+
+
+\begin{algorithm}
+\caption{Calculation of $d_r$}
+\begin{algorithmic}
+\STATE Parameters: $theta_1$, $theta_2$
+
+\STATE {$d_r = min(abs( \theta_1 - \theta_2), 2\pi -abs(\theta_1 - \theta_2) )$}
+
+\end{algorithmic}
+\end{algorithm}
+
 
 % SECTION 2.3
 \subsection{Interpolation Along the Straight Line in the C-Space}
