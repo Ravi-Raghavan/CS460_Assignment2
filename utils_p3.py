@@ -638,11 +638,11 @@ class RRT:
         self.rigid_body.set_control_input(u[0], u[1])
         
         #Get Car and Wheels
-        rigid_body = self.rigid_body.generate_rigid_body_from_configuration(configuration)
+        rigid_body_workspace = self.rigid_body.generate_rigid_body_from_configuration(configuration)
         wheels = self.rigid_body.generate_wheels_from_configuration(configuration)
         
         #Update Rigid Body Patch
-        self.rigid_body.patch.set_xy(rigid_body)
+        self.rigid_body.patch.set_xy(rigid_body_workspace)
         
         #Add wheel patches to rigid body figure
         self.rigid_body.bottom_left_wheel_patch.set_xy(wheels[0])
@@ -686,11 +686,11 @@ class RRT:
         self.rigid_body.set_control_input(u[0], u[1])
         
         #Get Car and Wheels
-        rigid_body = self.rigid_body.generate_rigid_body_from_configuration(configuration)
+        rigid_body_workspace = self.rigid_body.generate_rigid_body_from_configuration(configuration)
         wheels = self.rigid_body.generate_wheels_from_configuration(configuration)
         
         #Update Rigid Body Patch
-        self.rigid_body.patch.set_xy(rigid_body)
+        self.rigid_body.patch.set_xy(rigid_body_workspace)
         
         #Add wheel patches to rigid body figure
         self.rigid_body.bottom_left_wheel_patch.set_xy(wheels[0])
