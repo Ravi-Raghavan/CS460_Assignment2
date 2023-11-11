@@ -84,7 +84,7 @@ goal_index = None
 probability = 0.05
 iterations = 1
 
-max_iterations = 1000
+max_iterations = 10000
 
 #Start the timer
 start_time = time.time()
