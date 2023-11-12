@@ -15,7 +15,7 @@
 
 
 \title{Assignment 2}
-\date{November 10, 2023}
+\date{November 14, 2023}
 \author{
   Ravi Raghavan\\
   \texttt{rr1133}
@@ -147,12 +147,27 @@ explain PRMstar and how i changed PRM
 	\label{P2_collision_free(1).png}
 \end{figure}
 
+Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. 
+
+\newpage 
 \begin{figure}[h!]
 	\includegraphics[width= 0.9 \linewidth]{P2_collision_free(2).png}
 	\centering
 	\caption{Collision-Free Sampling for Environment 2}
 	\label{P2_collision_free(2).png}
 \end{figure}
+Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. 
+
+\newpage 
+\begin{figure}[h!]
+	\includegraphics[width= 0.9 \linewidth]{P2_collision_free(3).png}
+	\centering
+	\caption{Collision-Free Sampling for Environment 3}
+	\label{P2_collision_free(3).png}
+\end{figure}
+Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. 
+
+
 
 \newpage 
 \subsubsection{Analysis}
@@ -268,7 +283,7 @@ For example, I would divide the line segment from $(x_1, y_1, \theta_1)$ to  $(x
 % SECTION 2.4
 \subsection{RRT Implementation}
 
-Let $V$ be the set of vertices of the RRT and $E$ be the set of edges. 
+Let $V$ be the set of vertices of the RRT and $E$ be the set of edges of the RRT. 
 
 \begin{algorithm}
 \caption{RRT Algorithm}
@@ -294,10 +309,7 @@ Let $V$ be the set of vertices of the RRT and $E$ be the set of edges.
 
 \IF{$q_{goal} \notin V$}
 \STATE{Let $q_{near}$ be the point on the RRT that is closest to $q_{goal}$.}
-
-\IF{There is a Collision Free path from $q_{near}$ to $q_{goal}$}
-\STATE{$V = V \cup \{q_{goal\} }$, $E = E \cup \{(q_{near}, q_{goal})\}$}
-\ENDIF
+\STATE{Output the Path from $q_{start}$ to $q_{near}$}
 
 \ENDIF
 
@@ -308,7 +320,7 @@ Let $V$ be the set of vertices of the RRT and $E$ be the set of edges.
 % SECTION 2.5
 \newpage 
 \subsection{PRM Implementation}
-Let $V$ be the set of vertices of the PRM and $E$ be the set of edges. 
+Let $V$ be the set of vertices of the PRM and $E$ be the set of edges of the PRM. 
 
 
 \begin{algorithm}
@@ -319,7 +331,7 @@ $k$ (how many neighbors we want to analyze when forming edges)
 \STATE i $\rightarrow$ 0
 \WHILE {$i < N$}
 \STATE {Sample $q_{rand}$ from the free configuration space} 
-\STATE {$V = V \cup \{q_{steer\} }$}
+\STATE {$V = V \cup \{q_{rand\} }$}
 \STATE {Let $Q_{neighbors}$ be the $k$ nearest neighbors of $q_{rand}$ out of all the nodes currently in the PRM }
 
 \FOR{$q_{n} \in Q_{neighbors}$}
@@ -447,7 +459,7 @@ To solve for the Derivative of Configuration: \newline
 
 The problem description denotes $L = 0.2$. Now, all the necessary information is needed to solve the equation $q(t + 0.01) = q(t) + \dot{q}(t) (0.01)$ for the value of the configuration at the next time step! 
 % SECTION 3.3
-\subsection{RTT and Planning with Dynamics}
+\subsection{RRT and Planning with Dynamics}
 
 \begin{algorithm}
 \caption{Modified RRT For Non-Holonomic Car}
@@ -456,7 +468,7 @@ The problem description denotes $L = 0.2$. Now, all the necessary information is
 
 \STATE {Instead of trying to connect with an edge the closest node $q_{close}$ to the random sample $q_{rand}$, in this version of RRT, a blossom b of random controls $\{u_1, \ldots , u_b\}$ are sampled.} \newline 
 
-\STATE {For each of the b sampled controls $u_i$, you integrate forward in time the dynamics from the closest node $q_{close}$ for the same duration $\Delta T$. This results in b possible new states $\{q_{new}^1, \ldots, q_{new}^b \}$ that are reachable from $q_{close}$. Accept a new state only if the integration of the dynamics for time $\Delta T$ does not result in a collision.} \newline 
+\STATE {For each of the b sampled controls $u_i$, integrate forward in time the dynamics from the closest node $q_{close}$ for the same duration $\Delta T$. This results in b possible new states $\{q_{new}^1, \ldots, q_{new}^b \}$ that are reachable from $q_{close}$. Accept a new state only if the integration of the dynamics for time $\Delta T$ does not result in a collision.} \newline 
 
 \STATE{Check the distance between all the new states $\{q_{new}^1, \ldots, q_{new}^b \}$ to the random sample $q_{rand}$ and identify which state $q_{cn}$ among them is the closest to $q_{rand}$ given the distance metric in this configuration space.}
 
@@ -475,14 +487,37 @@ $j$ is equal to the total path distance as computed by the distance metric in th
 
 $k$ is the time required to build the RRT in seconds \newline 
 
-Scene 1: $rigid\_polygons.npy$
+Scene 1: $rigid\_polygons.npy$ \newline 
+Scene 2: $p2\_scene1.npy$ \newline 
+Scene 3: $p2\_scene8.npy$ \newline 
 
 For each experiment, I ran: \newline 
-python car\_2.py --start 0.5 0.25 0 --goal 1.75 1.5 0.0 --map "rigid\_polygons.npy" \newline 
+Scene 1: python car\_2.py --start 0.5 0.25 0 --goal 1.75 1.5 0.0 --map "rigid\_polygons.npy" \newline 
 
-Another thing to note is that, since RRT is probabilistically complete, if we let RRT run with no limit on the number of iterations, it will eventually find a solution(i.e. a path from start to the goal vertex). However, to compare whether a solution can be found across different values of $b$, I wanted to put a maximum limit on the number of iterations we run. \newline 
+Scene 2: python car\_2.py --start 0.5 0.25 0 --goal 1.75 1.5 0.0 --map "p2\_scene1.npy" \newline
 
-I set the maximum limit for the number of iterations as 10000
+Scene 3: python car\_2.py --start 0.25 0.25 -3 --goal 1.2 0.75 0.25 --map "p2\_scene1.npy" \newline
+
+
+Another thing to note is that, since RRT is probabilistically complete, if we let RRT run with no limit on the number of iterations, it will eventually find a solution(i.e. a path from start to the goal vertex). However, to compare whether a solution can be found across different values of $b$, I wanted to put a maximum limit on the number of iterations we run. I set the maximum limit for the number of iterations as 10000 
+ 
+\begin{table}
+  \centering
+\begin{tabular}{|c|c|c|c|}
+  \hline
+  Trial \# & b = 1 & b = 3 & b = 5 \\
+  \hline
+  1 & (1,8.62,105) & (1,4.87,131) & (1,6.32,14) \\
+  2 & (1,7.81,92) & (1,7.37,67) & (1,5.58,147) \\
+  3 & (1,9.39,261) & (1,3.77,68) & (1,5.59,176) \\
+  4 & (1,4.97,219) & (1,5.81,52) & (1,3.44,21) \\
+  5 & (1,6.71,43) & (1,8.81,321) & (1,4.45,104) \\
+  Avg & (1, 7.5, 144) & (1, 6.126, 127.8) & (1, 5.076, 92.4)\\
+  \hline
+\end{tabular} 
+\caption{Table for Scene 1}
+  \label{tab:mytable}
+\end{table}
 
 \begin{table}
   \centering
@@ -490,16 +525,91 @@ I set the maximum limit for the number of iterations as 10000
   \hline
   Trial \# & b = 1 & b = 3 & b = 5 \\
   \hline
-  1 & (1,3.62,105) & (1,11.87,131) & (1,6.32,14) \\
-  2 & (1,7.81,92) & (1,7.37,67) & (1,5.58,147) \\
-  3 & (1,9.39,261) & (1,3.77,68) & (1,5.59,176) \\
-  4 & (1,4.97,219) & (1,5.81,52) & (1,3.44,21) \\
-  5 & (1,6,71,43) & (1,8.81,321) & (1,4.45,104) \\
+  1 & (1, 6.83, 261) & (1, 5.47, 61) & (1, 12.57, 574) \\
+  2 & (1, 8.63, 559) & (1, 6.19, 46) & (1, 8.60, 128) \\
+  3 & (1, 11.99, 267) & (1, 4.43, 3) & (1, 8.13, 125) \\
+  4 & (1, 9.11, 1256) & (1, 8.36, 163) & (1, 7.78, 282) \\
+  5 & (1, 6.84, 102) & (1, 7.89, 46) & (1, 7.40, 86) \\
+  Avg & (1, 8.68, 489) & (1, 6.468, 63.8) & (a, 8.896, 239) \\
   \hline
 \end{tabular} 
-\caption{Table for Scene 1}
+\caption{Table for Scene 2}
   \label{tab:mytable}
 \end{table}
 
-\subsubsection{Analysis}
+\begin{table}
+  \centering
+\begin{tabular}{|c|c|c|c|}
+  \hline
+  Trial \# & b = 1 & b = 3 & b = 5 \\
+  \hline
+  1 & (1, 8.78, 232) & (1, 3.95, 150) & (1, 11.13, 186) \\
+  2 & (1, 3.82, 135) & (1, 7.56, 184) & (1, 6.32, 9) \\
+  3 & (1, 3.90, 182) & (1, 7, 264) & (1, 2.99, 239) \\
+  4 & (1, 8.05, 144) & (1, 6.76, 128) & (1, 3.65, 16) \\
+  5 & (1, 6.61, 156) & (1, 3.56, 31) & (1, 3.25, 281) \\
+  Avg & (1, 6.232, 169.8) & (1, 5.766, 151.4) & (1, 5.468, 146.2) \\
+  \hline
+\end{tabular} 
+\caption{Table for Scene 3}
+  \label{tab:mytable}
+\end{table}
+
+\newpage 
+\subsubsection{Scene 1 Analysis}
+
+\textbf{\underline{Impact on RRT Build Time}} \newline
+
+Based on my analysis for Scene 1, the time taken to construct the RRT seems to decrease as I increase the value of $b$. Increasing the value of $b$ enables me to sample more controls during each iteration of the RRT. \newline 
+
+An important thing to keep in mind is that we sample the goal node $5\%$ of the time. For $I$ iterations of RRT, the expected number of times we sample the goal node is $0.05 * I$. When we sample the goal node, due to the fact that we sample more controls as $b$ increases, we are more likely to add a node to the RRT that is closer to the goal node. Hence, as $b$ increases, we are likely to get to the goal region a lot quicker. \newline 
+
+
+\textbf{\underline{Impact on Path Distance}} \newline
+
+Based on my analysis for Scene 1, the path distance seems to decrease as I increase the value of $b$. Increasing the value of $b$ enables me to sample more controls during each iteration of the RRT. Sampling more controls would allow the RRT Algorithm to explore more areas of the free Configuration Space and, thus, find shorter paths to the goal region \newline 
+
+
+\textbf{\underline{Impact on Success Rate}} \newline
+My experiments show that my RRT Implementation was always successful in finding a path. This showed that 10000 iterations, as a max threshold, was sufficient in letting my RRT Algorithm converge to a solution
+
+\subsubsection{Scene 2 Analysis}
+
+\textbf{\underline{Impact on RRT Build Time}} \newline
+Based on my analysis for Scene 2, the time taken to construct the RRT seems to decrease when I increase $b$ from 1 to 3. However, the time taken to construct the RRT increases when I increase $b$ from 3 to 5. Here is my hypothesis for why this is occurring. \newline 
+
+An important thing to keep in mind is that we sample the goal node $5\%$ of the time. For $I$ iterations of RRT, the expected number of times we sample the goal node is $0.05 * I$. When we sample the goal node, due to the fact that we sample more controls as $b$ increases, we are more likely to add a node to the RRT that is closer to the goal node. Hence, as $b$ increases, we are likely to get to the goal region a lot quicker. \newline 
+
+However, when we increase $b$ past a certain point, due to the fact that Scene 2 is rather sparse(i.e. has a few polygonal obstacles) when compared to Scene 1, sampling too many controls may lead us to consider far too many potential directions. Furthermore, since the free space is much bigger, we must consider the Voronoi Bias of the RRT. \newline 
+
+For a recap, here is the definition of the Voronoi Bias of the RRT: Voronoi Bias refers to the fact that the probability of a tree node being selected as the “closest” tree node is proportional to the volume of its Voronoi Region. Our Search is biased towards those nodes with the largest Voronoi Regions(i.e. Unexplored regions of the configuration space)  \newline 
+
+Hence, since RRT is more biased towards the nodes with the largest Voronoi Regions and since our Scene is more sparse(i.e. less polygonal obstacles and bigger free space), we may have the situation where our RRT is exploring regions of the free space that is away from the goal. \newline 
+
+This, in my opinion, would explain the increase in RRT Build Time when $b$ was increased from 3 to 5 \newline 
+
+\textbf{\underline{Impact on Path Distance}} \newline
+Based on my analysis for Scene 2, the path distance seems to decrease when I increase $b$ from 1 to 3. However, the path distance increases when I increase $b$ from 3 to 5. Here is my hypothesis for why this is occurring \newline 
+
+Intuitively, when we increase $b$, we would expect the path distance to decrease. Increasing the value of $b$ enables me to sample more controls during each iteration of the RRT. Sampling more controls would allow the RRT Algorithm to explore more areas of the free Configuration Space and, thus, find shorter paths to the goal region \newline 
+
+However, once $b$ crosses a certain threshold, sampling too many controls may lead us to consider far too many potential directions. This may lead the RRT Algorithm astray from the goal node \newline 
+
+\textbf{\underline{Impact on Success Rate}} \newline
+My experiments show that my RRT Implementation was always successful in finding a path. This showed that 10000 iterations, as a max threshold, was sufficient in letting my RRT Algorithm converge to a solution
+
+\subsubsection{Scene 3 Analysis}
+\textbf{\underline{Impact on RRT Build Time}} \newline
+
+Based on my analysis for Scene 3, the time taken to construct the RRT seems to decrease as I increase the value of $b$. Increasing the value of $b$ enables me to sample more controls during each iteration of the RRT. \newline 
+
+An important thing to keep in mind is that we sample the goal node $5\%$ of the time. For $I$ iterations of RRT, the expected number of times we sample the goal node is $0.05 * I$. When we sample the goal node, due to the fact that we sample more controls as $b$ increases, we are more likely to add a node to the RRT that is closer to the goal node. Hence, as $b$ increases, we are likely to get to the goal region a lot quicker. \newline 
+
+
+\textbf{\underline{Impact on Path Distance}} \newline
+
+Based on my analysis for Scene 3, the path distance seems to decrease as I increase the value of $b$. Increasing the value of $b$ enables me to sample more controls during each iteration of the RRT. Sampling more controls would allow the RRT Algorithm to explore more areas of the free Configuration Space and, thus, find shorter paths to the goal region \newline 
+
+\textbf{\underline{Impact on Success Rate}} \newline
+My experiments show that my RRT Implementation was always successful in finding a path. This showed that 10000 iterations, as a max threshold, was sufficient in letting my RRT Algorithm converge to a solution
 \end{document}
