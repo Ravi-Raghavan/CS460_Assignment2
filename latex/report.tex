@@ -280,6 +280,9 @@ Let's say we have two configurations: $(x_1, y_1, \theta_1)$ and $(x_2, y_2, \th
 
 For example, I would divide the line segment from $(x_1, y_1, \theta_1)$ to  $(x_2, y_2, \theta_2)$ into $n$ segments, and animate the rigid body moving along those n segments. 
 
+\subsubsection{Interpolation With Respect to Topology}
+The topology, for the 2D Rigid Body, was $SE(2)$. For $\theta$, the angles can "wrap around" in a circle. Hence, as I mentioned earlier, I accounted for this with my calculation of the rotational distance needed to go from $\theta_1$ to $\theta_2$. Please refer to Algorithm 1 where I outlined specifically how $d_r$ would be calculated in such a case 
+
 % SECTION 2.4
 \subsection{RRT Implementation}
 
