@@ -228,7 +228,7 @@ class RigidBody:
         self.ax.add_patch(rectangle_patch)
 
         # Plot Centroid of rectangle
-        body_centroid = self.ax.plot(configuration[0], configuration[1], marker='o', markersize=3, color="magenta")
+        body_centroid = self.ax.plot(configuration[0], configuration[1], marker='o', markersize=3, color="green")
                 
     #Generate a Rigid Body from the Configuration Information
     def generate_rigid_body_from_configuration(self, configuration):
