@@ -47,9 +47,12 @@ def D(point):
 configurations = np.load(rigid_configs_file, allow_pickle= True)
 print(configurations)
 
-#Convert to Radians
+#Convert to Radians[Commented Out Because I found No Need For It]
+# thetas = configurations[:, 2].flatten()
+# thetas = np.deg2rad(thetas)
+
+#Assumes that the values are already in Radians
 thetas = configurations[:, 2].flatten()
-thetas = np.deg2rad(thetas)
 
 #Put in range [-pi, pi]
 thetas = thetas - (2 * np.pi * (np.floor((thetas + np.pi) / (2 * np.pi))))
