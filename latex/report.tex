@@ -188,7 +188,7 @@ Hence, to obtain 5 samples of random collision-free configurations, I followed t
 \begin{itemize}
     \item I sampled $x_{rand}$ uniformly from the range $(0, 2)$, I sampled $y_{rand}$ uniformly from the range $(0, 2)$, and I sampled $\theta_{rand}$ uniformly from the range $(-\pi, \pi)$
     \item The configuration I obtained was $(x_{rand}, y_{rand}, \theta_{rand})$
-    \item To determine whether this configuration was in the Free Space of the Configuration Space, I converted the configuration to workspace coordinates and applied collision checking(same algorithms I used in Assignment 1)
+    \item To determine whether this configuration was in the Free Space of the Configuration Space, I converted the configuration to workspace coordinates and applied collision checking(same algorithms I used in Assignment 1). I have included a brief description of these collision detection algorithms in the following section
     \item If the configuration was in the Free Space of the Configuration Space, I kept it
 \end{itemize}
 
@@ -528,8 +528,9 @@ Scene 3: python car\_2.py --start 0.25 0.25 -3 --goal 1.2 0.75 0.25 --map "p2\_s
 
 
 Another thing to note is that, since RRT is probabilistically complete, if we let RRT run with no limit on the number of iterations, it will eventually find a solution(i.e. a path from start to the goal vertex). However, to compare whether a solution can be found across different values of $b$, I wanted to put a maximum limit on the number of iterations we run. I set the maximum limit for the number of iterations as 10000 
+ \newpage 
  
-\begin{table}
+\begin{table}[h!]
   \centering
 \begin{tabular}{|c|c|c|c|}
   \hline
@@ -547,7 +548,7 @@ Another thing to note is that, since RRT is probabilistically complete, if we le
   \label{tab:mytable}
 \end{table}
 
-\begin{table}
+\begin{table}[h!]
   \centering
 \begin{tabular}{|c|c|c|c|}
   \hline
@@ -565,7 +566,7 @@ Another thing to note is that, since RRT is probabilistically complete, if we le
   \label{tab:mytable}
 \end{table}
 
-\begin{table}
+\begin{table}[h!]
   \centering
 \begin{tabular}{|c|c|c|c|}
   \hline
