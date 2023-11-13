@@ -386,6 +386,83 @@ $k$ (how many neighbors we want to analyze when forming edges)
 
 \end{algorithm}
 
+\subsubsection{Details on A* Implementation}
+Notation: $G(node)$ represents the $G$ value of the node(i.e. current best distance from the start node to the current node. $H(node)$ is the heuristic estimate from the current node to the goal node. $D(q_1, q_2)$ is the distance between two configurations $q_1$ and $q_2$. Please refer to earlier discussions regarding the calculation of the distance function in this topological space.  \newline 
+
+\begin{algorithm}
+\caption{A* Algorithm Implementation}
+\begin{algorithmic}
+    \STATE{Parameters: $q_{start}$(Start Configuration), $q_{goal}$(Goal Configuration)}
+    \STATE{Add $q_{start}$ to the fringe heap}
+    \WHILE{Fringe is NOT empty}
+    \STATE{Pop Fringe and get node. Let's call it $q_{n}$}
+
+    \IF{$q_{n}$ is the goal}
+    \STATE{return}
+    \ENDIF
+    
+    \STATE{Put $q_{n}$ in the closed list}
+    \STATE{Let the children of $q_{n}$ be $Q_{children}$}
+    \FOR{$q_c \in Q_{children}$}
+    
+    \IF{$q_{c}$ is NOT in the closed list and NOT in the Fringe}
+    \STATE{Add $q_{c}$ to the Fringe.}
+    \STATE{$H(q_{c}) = D(q_c, q_{goal})$ }
+    \STATE{$G(q_c) = G(q_n) + D(q_n, q_c)$}
+    \ENDIF
+
+    \IF{$q_{c}$ is NOT in the closed list and is already in the Fringe}
+    \IF{$G(q_n) + D(q_n, q_c) < G(q_c)$}
+    \STATE{Set $G(q_c) = G(q_n) + D(q_n, q_c)$}
+    \ENDIF
+    \ENDIF
+    
+    \ENDFOR
+    \ENDWHILE
+\end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Proof that A* Heuristic is Consistent} 
+As we learned in prior lectures, when it pertains to graph search, when the heuristic is consistent, then we can be certain that our A* Algorithm can find the optimal path(i.e. path with least cost). In our case, "cost" is path with smallest distance. \newline 
+
+To recap, in order to prove that a heuristic is consistent, the following must be established: \newline 
+
+Given three nodes, $q_1$, $q_2$, and $q_{goal}$, $h(q_1) \leq D(q_1, q_2) + h(q_2)$ \newline 
+
+Since we have set our $H(q) = D(q, q_{goal})$, this would require proving that: \newline 
+
+$D(q_1, q_{goal}) \leq D(q_1, q_2) + D(q_2, q_{goal})$ \newline 
+
+Let $D_t(q, q_{goal})$ represent the translational distance from $q$ to $q_{goal}$. Let $D_r(q, q_{goal})$ represent the rotational distance from $q$ to $q_{goal}$. As mentioned earlier, $D(q, q_{goal}) = 0.7D_t(q, q_{goal}) + 0.3D_r(q, q_{goal})$ \newline 
+
+We already know, from Euclidean Geometry, that $D_t(q_1, q_{goal}) \leq D_t(q_1, q_2) + D_t(q_2, q_{goal})$ \newline 
+
+
+It is also intuitive to see that 
+$D_r(q_1, q_{goal}) \leq D_r(q_1, q_2) + D_r(q_2, q_{goal})$ \newline 
+
+Let's say that we have to rotate $\theta$ degrees, either clockwise or counterclockwise, to get from $q_1$ to $q_{goal}$. There are two cases we can encounter. The first case is that the rotational configuration for $q_2$ is in between $q_1$ and $q_{goal}$. Then,  $D_r(q_1, q_{goal}) = D_r(q_1, q_2) + D_r(q_2, q_{goal})$ and, by extension, $D_r(q_1, q_{goal}) \leq D_r(q_1, q_2) + D_r(q_2, q_{goal})$ \newline 
+
+
+The second case is where $q_{2}$ is NOT in between $q_{1}$ and $q_{goal}$. In this case, either $D_r(q_1, q_2)$ or $D_r(q_2, q_{goal})$ is greater than $D_r(q_1, q_{goal})$. Hence, the equation $D_r(q_1, q_{goal}) \leq D_r(q_1, q_2) + D_r(q_2, q_{goal})$ is still satisfied. \newline 
+
+Since $D_t(q_1, q_{goal}) \leq D_t(q_1, q_2) + D_t(q_2, q_{goal})$ and $D_r(q_1, q_{goal}) \leq D_r(q_1, q_2) + D_r(q_2, q_{goal})$ \newline 
+
+it is easy to see that $0.7 D_t(q_1, q_{goal}) + 0.3 D_r(q_1, q_{goal}) \leq 0.7(D_t(q_1, q_2) + D_t(q_2, q_{goal})) + 0.3(D_r(q_1, q_2) + D_r(q_2, q_{goal}))$ \newline 
+
+$0.7 D_t(q_1, q_{goal}) + 0.3 D_r(q_1, q_{goal}) \leq 0.7D_t(q_1, q_2) + 0.7D_t(q_2, q_{goal}) + 0.3D_r(q_1, q_2) + 0.3D_r(q_2, q_{goal})$ \newline 
+
+$0.7 D_t(q_1, q_{goal}) + 0.3 D_r(q_1, q_{goal}) \leq 0.7D_t(q_1, q_2) + 0.3D_r(q_1, q_2) + 0.7D_t(q_2, q_{goal}) + 0.3D_r(q_2, q_{goal})$ \newline 
+
+$0.7 D_t(q_1, q_{goal}) + 0.3 D_r(q_1, q_{goal}) \leq (0.7D_t(q_1, q_2) + 0.3D_r(q_1, q_2)) + (0.7D_t(q_2, q_{goal}) + 0.3D_r(q_2, q_{goal}))$ \newline 
+
+$D(q_1, q_{goal}) \leq D(q_1, q_2) + D(q_2, q_{goal})$ \newline 
+
+Since we have set our $H(q) = D(q, q_{goal})$, we have now officially proved that 
+
+$h(q_1) \leq D(q_1, q_2) + h(q_2)$. \newline 
+
+By proving that my heuristic is consistent, it is also admissible, meaning that it is an optimistic estimate of the true cost to go. Furthermore, this would also show that the path returned by A* is optimal for this problem. 
 
 %%%%%%%%% PART 3 %%%%%%%%%%%%%%%%%%%
 \newpage 
