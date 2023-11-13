@@ -149,6 +149,10 @@ explain PRMstar and how i changed PRM
 
 Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. 
 
+To generate this plot, I ran: \newline 
+python rigid\_body\_1.py --map "rigid\_polygons.npy"
+
+
 \newpage 
 \begin{figure}[h!]
 	\includegraphics[width= 0.9 \linewidth]{P2_collision_free(2).png}
@@ -158,6 +162,10 @@ Shown in the image above is a plot of the environment with 5 random collision-fr
 \end{figure}
 Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. 
 
+To generate this plot, I ran: \newline 
+python rigid\_body\_1.py --map "p2\_scene1.npy"
+
+
 \newpage 
 \begin{figure}[h!]
 	\includegraphics[width= 0.9 \linewidth]{P2_collision_free(3).png}
@@ -166,6 +174,9 @@ Shown in the image above is a plot of the environment with 5 random collision-fr
 	\label{P2_collision_free(3).png}
 \end{figure}
 Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. 
+
+To generate this plot, I ran: \newline 
+python rigid\_body\_1.py --map "p2\_scene8.npy"
 
 
 
@@ -271,6 +282,9 @@ Hence, To calculate $d_r$, given $\theta_1$ and $\theta_2$, here is a rough algo
 
 \end{algorithmic}
 \end{algorithm}
+
+\subsubsection{Linear Search}
+Once my distance function was well defined, all I had to do was, given the query, perform a linear search over the given configurations(i.e. rigid\_configs.npy), sort the resulting distances, and output the neighbors with the smallest distances(i.e. we want "nearest" neighbors!). 
 
 
 % SECTION 2.3
@@ -478,6 +492,13 @@ The problem description denotes $L = 0.2$. Now, all the necessary information is
 \STATE{add the edge from $q_{close}$ to $q_{cn}$ and store the corresponding control on the edge.}
 \end{algorithmic}
 \end{algorithm}
+
+\subsubsection{Implementation Details}
+Here, I will explain the implementation details from my project that I used to help my RRT Algorithm converge to a solution quicker \newline 
+
+For each of the sampled controls, to ensure that my RRT converged to a solution quicker, I integrated forward in time the dynamics from the closest node $q_{close}$ for a total of 250 integration steps. Please note that I would stop integrating when I hit an obstacle and the "new" state that I attained(i.e. $q_{new}$) would be the state along the integration path just prior to hitting the obstacle.  \newline 
+
+Furthermore, to ensure that my RRT reached the goal region, I sampled the goal node 5\% of the time. 
 
 \subsubsection{Experimentation}
 To experiment with different design choices, my strategy was to change the value of $b$ and observe the success rate of the RRT Algorithm, the resulting path quality of the path returned by the RRT Algorithm, and the overall computational cost. 
