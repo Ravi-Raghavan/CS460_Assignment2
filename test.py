@@ -7,7 +7,7 @@ ax.set_aspect("equal")
 config = np.array([ 1.69082207 , 0.43978119 , 3.10122307])
 
 start = np.array([0.5, 0.25, 0.05])
-rigid_polygons_file = "rigid_polygons.npy"
+rigid_polygons_file = "others/rigid_polygons.npy"
 
 car = Car(f, ax, rigid_polygons_file, False, start)
 
@@ -23,5 +23,5 @@ print(A)
 F = np.array([1, 2, 3])
 print(F[0: -1])
 
-configurations = np.load("rigid_configs.npy", allow_pickle= True)
+configurations = np.load("others/rigid_configs.npy", allow_pickle= True)
 print(configurations)

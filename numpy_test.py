@@ -6,8 +6,8 @@ print(3 * np.pi/4)
 print(f"Modulo: {value}")
 
 
-arr = np.load("rigid_polygons.npy", allow_pickle = True)
+arr = np.load("others/rigid_polygons.npy", allow_pickle = True)
 print(arr)
 
-arr = np.load("rigid_configs.npy", allow_pickle = True)
+arr = np.load("others/rigid_configs.npy", allow_pickle = True)
 print(arr)

@@ -18,7 +18,7 @@ v, phi = control_values
 
 f,ax = plt.subplots(dpi = 100)
 ax.set_aspect("equal")
-rigid_polygons_file = "rigid_polygons.npy"
+rigid_polygons_file = "others/rigid_polygons.npy"
 
 car = None
 
