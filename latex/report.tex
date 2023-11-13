@@ -422,6 +422,7 @@ Notation: $G(node)$ represents the $G$ value of the node(i.e. current best dista
 \end{algorithmic}
 \end{algorithm}
 
+\newpage 
 \subsubsection{Proof that A* Heuristic is Consistent} 
 As we learned in prior lectures, when it pertains to graph search, when the heuristic is consistent, then we can be certain that our A* Algorithm can find the optimal path(i.e. path with least cost). In our case, "cost" is path with smallest distance. \newline 
 
@@ -458,7 +459,7 @@ $0.7 D_t(q_1, q_{goal}) + 0.3 D_r(q_1, q_{goal}) \leq (0.7D_t(q_1, q_2) + 0.3D_r
 
 $D(q_1, q_{goal}) \leq D(q_1, q_2) + D(q_2, q_{goal})$ \newline 
 
-Since we have set our $H(q) = D(q, q_{goal})$, we have now officially proved that 
+Since we have set our $h(q) = D(q, q_{goal})$, we have now officially proved that 
 
 $h(q_1) \leq D(q_1, q_2) + h(q_2)$. \newline 
 
