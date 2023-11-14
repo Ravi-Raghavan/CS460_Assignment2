@@ -39,7 +39,8 @@ def main():
     map = args.map
 
     # generate collision free configurations
-    arm = utl.RobotArm(map, [0.3,0.15], [0.0, 0.0], joint_radius=0.05, link_width=0.1)    
+    lengths = [0.4,0.25]
+    arm = utl.RobotArm(map, lengths, [0.0, 0.0], joint_radius=0.05, link_width=0.16611) #link_width is 1, 0.16611 makes it appear correctly
     arm.plot_polygons()
     configurations = []
     for _ in range(5):
@@ -47,6 +48,12 @@ def main():
 
     arm.plot_configs(configurations)
     utl.plt.show()
+
+    '''
+    To save polygons to .npy file:
+        polygons_save = np.array(configurations)
+        np.save('p1.2_configs', polygons_save)
+    '''
     
 if __name__ == "__main__":
     main()

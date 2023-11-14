@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.patches import Polygon
+from queue import PriorityQueue
 import matplotlib.collections as coll
 ##############################################################################
 ##################### ROBOT ARM OBJECT AND FUNCTIONS #########################
@@ -100,6 +101,7 @@ class RobotArm(object):
         self.num_configs += 1
         self.ax.set_xlim([0, 2])
         self.ax.set_ylim([0, 2])
+        
 
     def plot_configs(self, configurations):
         for config in configurations:
@@ -279,7 +281,7 @@ def normalize_angle(angle):
 def compute_distance(target, neighbor): 
     joint1_distance = abs(normalize_angle(neighbor[0])-normalize_angle(target[0]))
     joint2_distance = abs(normalize_angle(neighbor[1])-normalize_angle(target[1]))
-    
+
     joint1 = min(joint1_distance, 2*np.pi-joint1_distance)
     joint2 = min(joint2_distance, 2*np.pi-joint2_distance)
 
@@ -288,3 +290,190 @@ def compute_distance(target, neighbor):
 # compute norm of joint angle distances
 def compute_norm(joints):
      return np.sqrt(joints[0]**2+joints[1]**2)
+
+def animate(index):
+    pass
+
+######################### LINEAR SEARCH IMPLEMENTATION ######################
+def linear_search(target, k, configurations):
+    # store distances between configurations and target
+    distances = [] # stores (distance, joint angle 1, joint angle 2)
+    i = 0
+
+    # for each configuration, compute distance to target
+    for configuration in configurations:
+        i =i +1
+        # compute distance and add to arr ay
+        angular_difference = compute_distance(target, configuration)
+        distance_to_target = compute_norm(angular_difference)
+        distances.append((distance_to_target, configuration))
+
+    # sort array in ascending order based on distance
+    sorted_distances = sorted(distances, key = lambda x:x[0])
+
+    # create array of just configurations 
+    closest_neighbors = []
+    for i in range(k):
+        _, config = sorted_distances[i]
+        closest_neighbors.append(config)
+    return closest_neighbors
+
+######################### KD-TREE IMPLEMENTATION ######################
+# KD-Tree construction
+class Node:
+    def __init__(self, point, split_dim):
+        self.point = point
+        self.split_dim = split_dim
+        self.left = None
+        self.right = None
+
+def kd_tree(points, depth=0):
+    if len(points) == 0: #if none, all nodes added to tree
+        return None
+
+    k = len(points[0]) 
+    split_dim = depth % k
+
+    points.sort(key= lambda x : x[split_dim])
+
+    median = len(points) // 2
+
+    node = Node(points[median], split_dim)
+    node.left = kd_tree(points[:median], depth + 1)
+    node.right = kd_tree(points[median + 1:], depth + 1)
+
+    return node
+
+# Search KD-Tree
+def k_nearest_neighbors(root, query_point, k):
+    pq = PriorityQueue()
+    
+    def search(node):
+        nonlocal pq  
+        if node is None:
+            return
+        
+        ang_dist = compute_distance(query_point, node.point)
+        dist = compute_norm(ang_dist)
+        if len(pq.queue) < k:
+            pq.put((-dist, node.point))
+        else:
+            if -dist > pq.queue[0][0]:
+                pq.get()
+                pq.put((-dist, node.point))
+
+        # Recursive search on child nodes
+        split_dim = node.split_dim
+        diff = normalize_angle(query_point[split_dim]) - normalize_angle(node.point[split_dim])
+        if diff <= np.pi:
+            first, second = node.left, node.right
+        else:
+            first, second = node.right, node.left
+
+        search(first)
+
+        if len(pq.queue) < k or -abs(diff) < -pq.queue[0][0]: 
+            search(second)
+
+    search(root)
+    neighbors = [point for dist, point in sorted(pq.queue, key=lambda x: x[0], reverse = True)]
+    return neighbors
+
+from collections import defaultdict 
+import heapq
+
+class Graph:
+    def __init__(graph):
+        graph.dict = defaultdict(list)
+
+    def add(graph,node,adjacent_node): 
+        graph.dict[node].append(adjacent_node)
+        graph.dict[adjacent_node].append(node)
+
+    def shortest_path(graph, start, end, path =[]): 
+            path = path + [start] 
+            if( start == end ): 
+                return path 
+            short_path = None
+            for node in graph.dict[start]: 
+                if( node not in path ): 
+                    new_path = graph.shortest_path(node, end, path) 
+                    if(new_path): 
+                        if(not short_path or len(new_path) < len(short_path)): 
+                            short_path = new_path 
+            return short_path
+
+class PRM_Graph:
+    def __init__(self):
+        self.dict = defaultdict(list)
+
+    def add(self,node, new, distance):
+        # Check if the node already exists in the graph
+        if node in self.dict and new in self.dict:
+            # Update existing node with new neighbors and distances
+            self.dict[node].update({new:distance})
+            self.dict[new].update({node:distance})
+        elif node in self.dict and new not in self.dict:
+            self.dict[node].update({new:distance})
+            self.dict[new] = {node:distance}
+        elif node not in self.dict and new in self.dict:
+            self.dict[node] = {new:distance}
+            self.dict[new].update({node:distance})
+        else:
+            # Add a new node with neighbors and distances
+            self.dict[node] = {new:distance}
+            self.dict[new] = {node:distance}
+    
+    def dijkstras(self, start, goal):
+        # Dictionary to store the minimum distances
+        distances = {}
+        predecessor = {}
+        unvisited = []
+        track_path = []
+        for node,_ in self.dict.items():
+            unvisited.append(node)
+
+        for node in unvisited:
+            distances[node] = float('inf')
+        distances[start] = 0
+
+        while unvisited:
+            min_distance_node = None
+            for node in unvisited:
+                if min_distance_node is None:
+                    min_distance_node = node
+                elif distances[node]<distances[min_distance_node]:
+                    min_distance_node = node
+            
+            path = self.dict[min_distance_node].items()
+            
+            for child_node, weight in path:
+
+                if weight + distances[min_distance_node] < distances[child_node]:
+                    distances[child_node] = weight + distances[min_distance_node]
+                    predecessor[child_node] = min_distance_node
+            
+            unvisited.remove(min_distance_node)
+        
+        currentNode = goal
+        while currentNode != start:
+            try:
+                track_path.insert(0,currentNode)
+                currentNode = predecessor[currentNode]
+            except KeyError:
+                return None
+        
+        track_path.insert(0,start)
+
+        if distances[goal] != float('inf'):
+            return track_path
+        else:
+            return None
+
+def wrap(start, goal):
+    # checks if wrap occurs from 0 to 2pi
+    if start <= goal:
+        return ((goal-start) >= np.pi, '0')
+    # checks if wrap occurs from 2pi to 0
+    elif start >= goal:
+        return ((start-goal) >= np.pi, '2pi')

@@ -11,12 +11,29 @@ def move(arm, start,goal):
     distance2 = utl.angle_difference(start[1],goal[1])
     step1 = distance1/20
     step2 = distance2/20
- 
+    configurations1 = []
+    configurations2 = []
+
+    theta1 = goal[0]-start[0]
+    theta2 = goal[1]-start[1]
+
+    for i in range(22):
+        if theta1 >= 0:
+            joint1 = start[0] + i * step1
+        else:
+            joint1 = start[0] - i * step1
+        if theta2 >= 0:
+            joint2 = start[1] + i * step2
+        else:
+            joint2 = start[1] -i * step2
+        configurations1.append(joint1)
+        configurations2.append(joint2)
+
     # create animation
     def update(frame):
         utl.plt.cla()
-        joint1 = start[0] + frame * step1
-        joint2 = start[1] + frame * step2
+        joint1 = configurations1[frame]
+        joint2 = configurations2[frame]
 
         if frame == 0:  # start configuration
             arm.plot('lightblue')
@@ -40,10 +57,10 @@ def main():
     # store arguments
     start = args.start
     goal = args.goal
-    lengths = [0.3,0.15]
+    lengths = [0.4,0.25]
 
     # initialize robot at starting orientation
-    arm = utl.RobotArm('None', lengths, [start[0], start[1]], joint_radius=0.05, link_width=0.1)
+    arm = utl.RobotArm('None', lengths, [start[0], start[1]], joint_radius=0.05, link_width=0.16611) #link_width is 1, 0.16611 makes it appear correctly
 
     # move arm from start to goal
     move(arm, start, goal)

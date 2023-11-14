@@ -116,10 +116,11 @@ def query(graph, start, goal):
     else:
         return None
 
-# PRM IMPLEMENTATION 
-def prm(arm, start, goal):
+# PRM* IMPLEMENTATION -> k = log(n)
+def prm_star(arm, start, goal):
     N = 1000
-    k = 3
+    k = np.log(N)
+    k = k.astype(int)
     new_roadmap, cspace_animation = roadmap(arm, N, start, goal, k)
     path = query(new_roadmap, start, goal)
 
@@ -129,7 +130,6 @@ def prm(arm, start, goal):
     else:
         print("Unable to find feasible path after 1000 nodes")
         workspace_animation = None
-
     return (cspace_animation, workspace_animation)
 
 # Animates Configuration Space
@@ -228,7 +228,7 @@ def move(arm, path):
         else:  # other configurations
             arm.plot('slategrey')
         index += 1
-    ani = animation.FuncAnimation(arm.fig, update, frames=num_frames, interval = 500, repeat=False)
+    ani = animation.FuncAnimation(arm.fig, update, frames=num_frames, interval= 500, repeat=False)
     animations.append(ani)
     return animations
 
@@ -245,7 +245,7 @@ def main():
 
     # Initialize robot at starting orientation
     arm = utl.RobotArm(map, [0.4,0.25], [start[0], start[1]], joint_radius=0.05, link_width=0.16611) #link_width is 1, 0.16611 makes it appear correctly
-    cspace_animation, workspace_animation = prm(arm, start, goal)
+    cspace_animation, workspace_animation = prm_star(arm, start, goal)
     utl.plt.show()
 
 if __name__ == "__main__":
