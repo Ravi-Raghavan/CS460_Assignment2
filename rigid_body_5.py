@@ -23,6 +23,14 @@ rigid_body = RigidBody(f, ax, rigid_polygons_file)
 start = np.array([args.start[0], args.start[1], args.start[2]])
 goal = np.array([args.goal[0], args.goal[1], args.goal[2]])
 
+if (rigid_body.check_rigid_body_collision(rigid_body.generate_rigid_body_from_configuration(start))):
+    print("The start configuration collide with the boundary or with obstacles in the environment. Please try again with different start configuration")
+    exit(0)
+
+if (rigid_body.check_rigid_body_collision(rigid_body.generate_rigid_body_from_configuration(goal))):
+    print("The goal configuration collide with the boundary or with obstacles in the environment. Please try again with different goal configuration")
+    exit(0)
+
 print("Start: ", start)
 print("Goal: ", goal)
 print("Map File: ", rigid_polygons_file)

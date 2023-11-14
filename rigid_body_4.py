@@ -24,6 +24,14 @@ rigid_body = RigidBody(f, ax, rigid_polygons_file)
 start = np.array([args.start[0], args.start[1], args.start[2]])
 goal = np.array([args.goal[0], args.goal[1], args.goal[2]])
 
+if (rigid_body.check_rigid_body_collision(rigid_body.generate_rigid_body_from_configuration(start))):
+    print("The start configuration collide with the boundary or with obstacles in the environment. Please try again with different start configuration")
+    exit(0)
+
+if (rigid_body.check_rigid_body_collision(rigid_body.generate_rigid_body_from_configuration(goal))):
+    print("The goal configuration collide with the boundary or with obstacles in the environment. Please try again with different goal configuration")
+    exit(0)
+
 P = 0
 N = 1000
 
@@ -116,5 +124,5 @@ print("Timestep Array: ", timestep_array)
 if len(path) > 0:
     total_timesteps = np.sum(timestep_array)
     print("Total Timesteps: ", total_timesteps)
-    rrt.animation = FuncAnimation(f, rrt.update_animation_configuration, frames = range(0, total_timesteps + 1), init_func = rrt.init_animation_configuration, blit = True, interval = 25, repeat = False)
+    rrt.animation = FuncAnimation(f, rrt.update_animation_configuration, frames = range(0, total_timesteps + 1), init_func = rrt.init_animation_configuration, blit = True, interval = 30, repeat = False)
     plt.show()

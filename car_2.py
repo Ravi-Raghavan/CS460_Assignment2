@@ -30,6 +30,17 @@ print(f"Value of b is {b}")
 #Define our car 
 car = Car(f, ax, rigid_polygons_file, False, start, enable_keyboard_control = False)
 
+#Just do a sanity check to ensure that start/goal are not colliding configurations
+if (car.check_rigid_body_collision(car.generate_rigid_body_from_configuration(start)) or 
+    car.check_wheel_collision(car.generate_wheels_from_configuration(start))):
+    print("The start configuration collide with the boundary or with obstacles in the environment. Please try again with different start configuration")
+    exit(0)
+
+if (car.check_rigid_body_collision(car.generate_rigid_body_from_configuration(goal)) or 
+    car.check_wheel_collision(car.generate_wheels_from_configuration(goal))):
+    print("The goal configuration collide with the boundary or with obstacles in the environment. Please try again with different goal configuration")
+    exit(0)
+
 #Define our RRT
 rrt = RRT(start, goal, car, b = 1, num_integrations = 250)
 
