@@ -224,6 +224,11 @@ class RigidBody:
     def plot_configuration(self, configuration, color = 'r', facecolor = 'white'):
         #Generate Rigid Body from Configuration and Plot in Workspace        
         rigid_body = self.generate_rigid_body_from_configuration(configuration)
+        
+        #If facecolor is equal to white, set tuple
+        if facecolor == 'white':
+            facecolor = (1, 1, 1, 0.1)
+        
         rectangle_patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = facecolor, edgecolor = color)
         self.ax.add_patch(rectangle_patch)
 
