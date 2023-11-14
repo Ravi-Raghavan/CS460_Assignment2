@@ -221,10 +221,10 @@ class RigidBody:
         self.animation_configuration[2] =  self.animation_configuration[2] - (2 * np.pi * (np.floor(( self.animation_configuration[2] + np.pi) / (2 * np.pi))))        
         return self.patch, self.path, self.body_centroid[0]
     
-    def plot_configuration(self, configuration, color = 'r'):
+    def plot_configuration(self, configuration, color = 'r', facecolor = 'white'):
         #Generate Rigid Body from Configuration and Plot in Workspace        
         rigid_body = self.generate_rigid_body_from_configuration(configuration)
-        rectangle_patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = None, edgecolor = color)
+        rectangle_patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = facecolor, edgecolor = color)
         self.ax.add_patch(rectangle_patch)
 
         # Plot Centroid of rectangle
