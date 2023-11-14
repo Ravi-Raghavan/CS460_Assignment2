@@ -224,7 +224,7 @@ class RigidBody:
     def plot_configuration(self, configuration, color = 'r'):
         #Generate Rigid Body from Configuration and Plot in Workspace        
         rigid_body = self.generate_rigid_body_from_configuration(configuration)
-        rectangle_patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = color, edgecolor = color)
+        rectangle_patch = matplotlib.patches.Polygon(rigid_body, closed=True, facecolor = None, edgecolor = color)
         self.ax.add_patch(rectangle_patch)
 
         # Plot Centroid of rectangle
