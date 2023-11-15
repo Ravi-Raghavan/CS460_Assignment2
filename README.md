@@ -9,6 +9,9 @@ arm_6.py: Code for PRM* [Extra Credit]
 
 car_keyboard_dynamics.py: Code for 3.1
 - Refer to Report for Keyboard Buttons to Control the Animation
+- All you have to do is run this file(no command line arguments needed)
+- For instructions on what keyboard buttons to press, please refer to our report 
+
 
 car_keyboard_dynamics.py: Code for 3.1
 - All you have to do is run this file(no command line arguments needed)
