@@ -777,7 +777,7 @@ My experiments show that my RRT Implementation was always successful in finding 
 \subsubsection{Scene 3 Analysis}
 \textbf{\underline{Impact on RRT Build Time}} \newline
 
-Based on my analysis for Scene 1, the time taken to construct the RRT seems to decrease as I increase the value of $b$. Increasing the value of $b$ enables me to sample more controls during each iteration of the RRT. \newline 
+Based on my analysis for Scene 3, the time taken to construct the RRT seems to decrease as I increase the value of $b$. Increasing the value of $b$ enables me to sample more controls during each iteration of the RRT. \newline 
 
 An important thing to keep in mind is that we sample the goal node $5\%$ of the time. For $I$ iterations of RRT, the expected number of times we sample the goal node is $0.05 * I$. Due to the fact that we sample more controls as $b$ increases, we will be integrating along more pathways as dictated by the dynamic equation and the value of the control. Hence, due to the simple fact that we are exploring more pathways, we are more likely to add a node to the RRT that is closer to the goal node. Hence, as $b$ increases, we are likely to get to the goal region a lot quicker. \newline 
 
