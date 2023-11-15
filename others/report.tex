@@ -494,7 +494,10 @@ As we learned in prior lectures, when it pertains to graph search, when the heur
 
 To recap, in order to prove that a heuristic is consistent, the following must be established: \newline 
 
-Given three nodes, $q_1$, $q_2$, and $q_{goal}$, $h(q_1) \leq D(q_1, q_2) + h(q_2)$ \newline 
+Given three nodes, $q_1$, $q_2$, and $q_{goal}$, $h(q_1) \leq Cost(q_1, q_2) + h(q_2)$ \newline 
+
+Since, in this topological space, $Cost(q_1, q_2) = D(q_1, q_2)$, we can rewrite this as: \newline 
+$h(q_1) \leq D(q_1, q_2) + h(q_2)$ \newline 
 
 Since we have set our $H(q) = D(q, q_{goal})$, this would require proving that: \newline 
 
