@@ -30,111 +30,118 @@
 \section{Motion Planning for a 2-link Planar Arm}
 % SECTION 1.1
 \subsection{Sampling Random Collision-Free Configurations}
+To generate a plot of random collision-free configurations, $\theta$1 and $\theta$2 were uniformly sampled. After each sample, the robot arm was updated and checked for collisions. If a collision occurs, the joint angles are repeatedly sampled until a collision-free configuration results. Each collision-free configuration is added to a list and the list of configurations are plotted at the end.
 % SECTION 1.1 FIGURES
 \begin{figure}[h!]
      \begin{minipage}{0.48\textwidth}
-    \includegraphics[width=\linewidth]{p1.1.1.png}
+    \includegraphics[width=\linewidth]{arm_1.1-1.png}
     \caption{Provided environment}
   \end{minipage}\hfill
   \begin{minipage}{0.48\textwidth}
-    \includegraphics[width=\linewidth]{p1.1.2.png}
+    \includegraphics[width=\linewidth]{arm_1.1-2.png}
     \caption{Assignment 1 environment}
   \end{minipage}\hfill
 \end{figure}
 % SECTION 1.2
 \subsection{Nearest Neighbors}
-To find the nearest neighbors, the distance was measured using the end-effector positions. For implementation, forward kinematics was used to determine the coordinates of the end-effectors and the Eucliean distance was calculated from the coordinates.
+The distance metric was computed in two parts. First, the difference between $\theta$1 and $\theta$2 of the configurations was computed. The differences were then both squared and summed. The square root of the sum was then taken to get the Euclidean distance. The result, the Euclidean distance, was used as the distance metric for part 1.2 and the rest of the project.
 % SECTION 1.2 FIGURES
 \begin{figure}[htbp]
   \centering
   \begin{minipage}{0.45\textwidth}
-    \includegraphics[width=\linewidth]{p1.2.1.png}
+    \includegraphics[width=\linewidth]{arm_1.2-1.png}
     \caption{target = [0,0], k=3}
   \end{minipage}\hfill
   \begin{minipage}{0.45\textwidth}
-    \includegraphics[width=\linewidth]{p1.2.2.png}
+    \includegraphics[width=\linewidth]{arm_1.2-2.png}
     \caption{target = [3.14,1.5], k=6}
   \end{minipage}
   \begin{minipage}{0.45\textwidth}
-    \includegraphics[width=\linewidth]{p1.2.3.png}
+    \includegraphics[width=\linewidth]{arm_1.2-3.png}
     \caption{target = [4,5.2], k=4}
   \end{minipage}\hfill
   \begin{minipage}{0.45\textwidth}
-    \includegraphics[width=\linewidth]{p1.2.4.png}
+    \includegraphics[width=\linewidth]{arm_1.2-4.png}
     \caption{target = [1.5,1.1], k=10}
   \end{minipage}
    \begin{minipage}{0.45\textwidth}
-    \includegraphics[width=\linewidth]{p1.2.5.png}
+    \includegraphics[width=\linewidth]{arm_1.2-5.png}
     \caption{target = [5.8,-1.5], k=5}
   \end{minipage}
 \end{figure}
 \subsubsection{With Linear Search Approach}
-To implement the Linear Search,
+To implement the Linear Search, the distance between the target and each configurations in the configurations list was computed. The distances were added to a list along with the configurations and this list was sorted in ascending order. The first k elements of the list gets returned.
 % SECTION 1.2 -> EXTRA CREDIT
 \subsubsection{With KD-Tree Search Approach}
-To implement the KD-Tree Search,
+To implement the KD-Tree Search, a KD-Tree was implemented where the data was split based on where $\theta$1 or $\theta$2  was being partitioned. To search the KD-Tree, $\pi$  was determined to be the split that determined whether to go left or right on the KD-Tree. This contrasts a KD-Tree with Euclidean topology where 0 is used.
 \subsubsection{Search Comparison}
-To compare running times between linear search and kd-tree search, the map used was arm\_polygons.npy and the target was [3.14, 0]. When comparing the running time as the number of configurations increased, the k nearest neighbors was set to 3. When comparing the running time as the number of neighbors increased, the number of random configurations was 100. 
+To compare running times between Linear search and KD-tree search, the target was [3.14, 0] for arm$\_$configs.npy. When comparing the running time as the number of configurations increased, the k-nearest neighbors was set to 3 (see fig.10-13). When comparing the running time as the number of neighbors increased, the number of random configurations was 100 (see fig.14-17). Based on the figures generated from the search comparisons (see fig.8 and fig.9), the running times were consistent throughout for Linear search and KD-tree search
 \begin{figure}[]
   \centering
-    \includegraphics[width=\linewidth]{comp_k.png}
+    \includegraphics[width=\linewidth]{arm_1.2-ec10.png}
     \caption{Running time vs. number of nearest neighbors}
-    \includegraphics[width=\linewidth]{comp_configs.png}
+    \includegraphics[width=\linewidth]{arm_1.2-ec9.png}
     \caption{Running time vs. number of configurations}
 \end{figure}
 \subsubsection{Visualizations}
 \begin{figure}[htbp]
   \centering
   \begin{minipage}{0.45\textwidth}
-    \includegraphics[width=\linewidth]{p1.2.ec100.png}
-    \caption{}
+    \includegraphics[width=\linewidth]{arm_1.2-ec1.png}
+    \caption{Search using 100 configurations}
   \end{minipage}\hfill
   \begin{minipage}{0.45\textwidth}
-    \includegraphics[width=\linewidth]{p1.2.ec500.png}
-    \caption{}
+    \includegraphics[width=\linewidth]{arm_1.2-ec2.png}
+    \caption{Search using 500 configurations}
   \end{minipage}
   \begin{minipage}{0.45\textwidth}
-    \includegraphics[width=\linewidth]{p1.2.ec1000.png}
-    \caption{}
+    \includegraphics[width=\linewidth]{arm_1.2-ec3.png}
+    \caption{Search using 1000 configurations}
   \end{minipage}\hfill
   \begin{minipage}{0.45\textwidth}
-    \includegraphics[width=\linewidth]{p1.2.ec2000.png}
-    \caption{}
+    \includegraphics[width=\linewidth]{arm_1.2-ec4.png}
+    \caption{Search using 2000 configurations}
   \end{minipage}
 \end{figure}
 \begin{figure}[htbp]
   \centering
   \begin{minipage}{0.45\textwidth}
-    \includegraphics[width=\linewidth]{p1.2.ec3n.png}
-    \caption{}
+    \includegraphics[width=\linewidth]{arm_1.2-ec5.png}
+    \caption{Search with k=3}
   \end{minipage}\hfill
   \begin{minipage}{0.45\textwidth}
-    \includegraphics[width=\linewidth]{p1.2.ec5n.png}
-    \caption{}
+    \includegraphics[width=\linewidth]{arm_1.2-ec6.png}
+    \caption{Search with k=5}
   \end{minipage}
   \begin{minipage}{0.45\textwidth}
-    \includegraphics[width=\linewidth]{p1.2.ec10n.png}
-    \caption{}
+    \includegraphics[width=\linewidth]{arm_1.2-ec7.png}
+    \caption{Search with k=10}
   \end{minipage}\hfill
   \begin{minipage}{0.45\textwidth}
-    \includegraphics[width=\linewidth]{p1.2.ec20n.png}
-    \caption{}
+    \includegraphics[width=\linewidth]{arm_1.2-ec8.png}
+    \caption{Search with k=20}
   \end{minipage}
 \end{figure}
 % SECTION 1.3
 \subsection{Interpolation Along the Straight Line in the C-Space}
-describe implementation and resulting visualizations
+To move the arm from the start to goal, the difference between the joints were computed. The distance was normalized to be within [0, $\pi$] to account for the topology. The distance between $\theta$1 of the start and goal was how much the joint 1 needed to rotate to achieve the goal position. Similarly, the distance between $\theta$2 of the start and goal was how much the joint 2 needed to rotate to achieve the goal position. To make the animation look smooth, the step size of $\theta$1 was $\theta$1's distance/20 and the step size of $\theta$2 was $\theta$2's distance/20. The direction $\theta$1 and $\theta$2 move in is determined by the unnormalized difference between the goal and the start. If the difference is less than 0, this meant that the arm has to move in a clockwise direction. If the difference was greater than 0, this meant that the arm has to move in a counterclockwise direction.
 % SECTION 1.4
 \subsection{RRT Implementation}
-explain RRT implementation
-how did i decide to add an edge to tree
+To implement RRT, V was the set of vertices and E was the set of edges. To represent the graph structure, a Dictonary was used. Using the RRT algorithm, sampled configurations can be added until there were 1000 stored in the graph. The step size for $\theta$1 and $\theta$2 was determined by using the half-distance between the nearest configuration's and the random configuration's $\theta$1 and $\theta$2, respectively. The nearest configuration to random sample was found using Linear Search. To aid the search process, the goal was sampled 5 percent of the time
+\subsubsection{Edges}
+To add an edge, the path from the nearest configuration in the direction of a random configuration was interpolated. The step size along this path was the distance of $\theta$1/5 and distance of $\theta$2/5. Again the direction that theta moves in is determined by whether or not the difference between the "goal" and "start" is less than 0. If the path to the random configuration is collision-free at each step, then the edge is able to be added to the graph. 
+\subsubsection{Wrap Around}
+Regarding the torodial topology of a 2-link arm, the edges require a "wrap" around. More specifically, if a configuration goes past 0, it wraps around to 2$\pi$. Similarly if a configuration goes past 2$\pi$, it wraps around to 0. If the start configuration is <= the goal configuration, wrap around occurs if the goal-start angles are greater than $\pi$. If the start configuration is >= the goal configuration, wrap around occurs if the start-goal angles are greater than $\pi$. This was computed for $\theta$1 and $\theta$2 between the configurations.
 % SECTION 1.5
 \subsection{PRM Implementation}
-explain PRM implementation
+PRM consists of two parts, the roadmap construction and query process. To build the roadmap, N, collision-free configurations were added to the graph. The graph is again represented using a Dictionary. However, unlike RRT where two configurations were stored together without their distance, PRM was implemented to contain the distance. This was done so that the during the query process, dijkstra's could be applied. Using Dijkstra's a shortest path was found between the start and goal (if possible). 
+\subsubsection{Further Notes}
+PRM took a considerably longer about of time in comparison to RRT. With more nodes in the graph, PRM had to check every configurations for it's k neighbors and form edges if possible. As a result, animation arm1.5-tree1 had to be computed using 100 nodes. This contrasted RRT which just connects to the nearest neighbor. To represent the configuration space, a "wrap around" for the edges was used as metnioned in section 1.4. 
 % SECTION 1.6 -> EXTRA CREDIT
 \subsubsection{PRM*}
-explain PRMstar and how i changed PRM
+To change PRM to implement PRM*, k was changed so that it was not a constant k = 3. Instead, PRM* involves setting k = log(n). As a result, with more nodes in the graph, more neighbors are being connected. 
 \subsubsection{Planner Comparison}
+Overall, RRT had the highest success rate. PRM and PRM* both encounted the problem of not being able to find a feasible path within 1000 nodes or just taking too long. Though, with lower nodes, PRM and PRM* seemed to run far more faster. In terms of path quality, PRM and PRM* provided the more optimal paths. The paths provided by RRT seemed to move back and forth before finding the goal. PRM and PRM* presented a more direct path. For 5 environments, the respective pairs of start/goals: (-0.5, -0.5) to (1.5,1.5), (0, 0) to (1.5,1.5), (0, 3.14) to (3.14,1.57), (-1.57, -0.5) to (1.5,1.5), (-0.5, -1.57) to (1.5,1.5). PRM and PRM* had very low success rates with finding a path within 1000 nodes.
 %%%%%%%%% PART 2 %%%%%%%%%%%%%%%%%%%
 \maketitle
 \section{Motion Planning for a Rigid Body in 2D}
