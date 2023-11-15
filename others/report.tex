@@ -385,7 +385,7 @@ Let $V$ be the set of vertices of the RRT and $E$ be the set of edges of the RRT
 \IF{A point like $q_{steer}$ could NOT found on the straight line interpolated path from $q_{rand}$ to $q_{}$}
 \STATE{Continue to next Iteration}
 \ELSE
-\STATE{$V = V \cup \{q_{steer\} }$, $E = E \cup \{(q_{rand}, q_{steer})\}$}
+\STATE{$V = V \cup \{q_{steer}\}$, $E = E \cup \{(q_{near}, q_{steer})\}$}
 \STATE {i $\rightarrow i + 1$ } 
 \ENDIF
 \ENDWHILE
