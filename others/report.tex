@@ -668,7 +668,7 @@ Scene 1: python car\_2.py --start 0.5 0.25 0 --goal 1.75 1.5 0.0 --map "rigid\_p
 
 Scene 2: python car\_2.py --start 0.5 0.25 0 --goal 1.75 1.5 0.0 --map "p2\_scene1.npy" \newline
 
-Scene 3: python car\_2.py --start 0.25 0.25 -3 --goal 1.2 0.75 0.25 --map "p2\_scene1.npy" \newline
+Scene 3: python car\_2.py --start 0.25 0.25 -3 --goal 1.2 0.75 0.25 --map "p2\_scene8.npy" \newline
 
 
 Another thing to note is that, since RRT is probabilistically complete, if we let RRT run with no limit on the number of iterations, it will eventually find a solution(i.e. a path from start to the goal vertex). However, to compare whether a solution can be found across different values of $b$, I wanted to put a maximum limit on the number of iterations we run. I set the maximum limit for the number of iterations as 10000 
