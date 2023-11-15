@@ -9,6 +9,10 @@ arm_5.py: Code for 1.5
 car_keyboard_dynamics.py: Code for 3.1
 - Refer to Report for Keyboard Buttons to Control the Animation
 
+car_keyboard_dynamics.py: Code for 3.1
+- All you have to do is run this file(no command line arguments needed)
+- For instructions on what keyboard buttons to press, please refer to our report 
+
 car_1.py: Code for 3.2
 car_2.py: Code for 3.3
 
