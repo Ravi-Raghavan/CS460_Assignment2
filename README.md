@@ -5,6 +5,7 @@ arm_2.py: Code for 1.2
 arm_3.py: Code for 1.3
 arm_4.py: Code for 1.4
 arm_5.py: Code for 1.5
+arm_6.py: Code for PRM* [Extra Credit]
 
 car_keyboard_dynamics.py: Code for 3.1
 - Refer to Report for Keyboard Buttons to Control the Animation
