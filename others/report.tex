@@ -193,8 +193,7 @@ python rigid\_body\_1.py -\-- map "others/rigid\_polygons.npy"
 	\caption{1st Collision-Free Sampling for Environment 2}
 	\label{P2_collision_free(2)-1.png}
 \end{figure}
-Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. 
-python rigid\_body\_1.py -\-- map "others/p2\_scene1.npy"
+Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. To generate this plot, I ran, python rigid\_body\_1.py -\-- map "others/p2\_scene1.npy"
 
 \newpage 
 \begin{figure}[h!]
@@ -203,8 +202,7 @@ python rigid\_body\_1.py -\-- map "others/p2\_scene1.npy"
 	\caption{2nd Collision-Free Sampling for Environment 2}
 	\label{P2_collision_free(2)-2.png}
 \end{figure}
-Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. 
-python rigid\_body\_1.py -\-- map "others/p2\_scene1.npy"
+Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. To generate this plot, I ran, python rigid\_body\_1.py -\-- map "others/p2\_scene1.npy"
 
 \newpage 
 \begin{figure}[h!]
@@ -213,8 +211,7 @@ python rigid\_body\_1.py -\-- map "others/p2\_scene1.npy"
 	\caption{3rd Collision-Free Sampling for Environment 2}
 	\label{P2_collision_free(2)-3.png}
 \end{figure}
-Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. 
-python rigid\_body\_1.py -\-- map "others/p2\_scene1.npy"
+Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. To generate this plot, I ran, python rigid\_body\_1.py -\-- map "others/p2\_scene1.npy"
 
 \newpage 
 \begin{figure}[h!]
@@ -223,8 +220,7 @@ python rigid\_body\_1.py -\-- map "others/p2\_scene1.npy"
 	\caption{1st Collision-Free Sampling for Environment 3}
 	\label{P2_collision_free(3)-1.png}
 \end{figure}
-Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. 
-python rigid\_body\_1.py -\-- map "others/p2\_scene8.npy"
+Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. To generate this plot, I ran, python rigid\_body\_1.py -\-- map "others/p2\_scene8.npy"
 
 \newpage 
 \begin{figure}[h!]
@@ -233,8 +229,7 @@ python rigid\_body\_1.py -\-- map "others/p2\_scene8.npy"
 	\caption{2nd Collision-Free Sampling for Environment 3}
 	\label{P2_collision_free(3)-2.png}
 \end{figure}
-Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. 
-python rigid\_body\_1.py -\-- map "others/p2\_scene8.npy"
+Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. To generate this plot, I ran, python rigid\_body\_1.py -\-- map "others/p2\_scene8.npy"
 
 \newpage 
 \begin{figure}[h!]
@@ -243,8 +238,7 @@ python rigid\_body\_1.py -\-- map "others/p2\_scene8.npy"
 	\caption{3rd Collision-Free Sampling for Environment 3}
 	\label{P2_collision_free(3)-3.png}
 \end{figure}
-Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. 
-python rigid\_body\_1.py -\-- map "others/p2\_scene8.npy"
+Shown in the image above is a plot of the environment with 5 random collision-free configurations of the Rigid Body. For each configuration, the green dot represents the geometric center of the rigid body when it is in that configuration. To generate this plot, I ran, python rigid\_body\_1.py -\-- map "others/p2\_scene8.npy"
 
 
 \newpage 
@@ -356,8 +350,8 @@ Hence, To calculate $d_r$, given $\theta_1$ and $\theta_2$, here is a rough algo
 \end{algorithmic}
 \end{algorithm}
 
-\subsubsection{Linear Search}
-Once my distance function was well defined, all I had to do was, given the query, perform a linear search over the given configurations(i.e. rigid\_configs.npy), sort the resulting distances, and output the neighbors with the smallest distances(i.e. we want "nearest" neighbors!). 
+\subsubsection{Search for Nearest Neighbors}
+Once my distance function was well defined, all I had to do was, given the query, perform a search over the given configurations(i.e. configurations given in others/rigid\_configs.npy file).First I computed the distance to each configuration specified in others/rigid\_configs.npy,  then I sorted the resulting distances in ascending order, and then I output the k neighbors with the smallest distances(i.e. the first k values). I do this because we want "nearest" neighbors!. 
 
 
 % SECTION 2.3
@@ -367,10 +361,13 @@ Let's say we have two configurations: $(x_1, y_1, \theta_1)$ and $(x_2, y_2, \th
 
 For example, I would divide the line segment from $(x_1, y_1, \theta_1)$ to  $(x_2, y_2, \theta_2)$ into $n$ segments, and animate the rigid body moving along those n segments. 
 
+Let $q_{start} = (x_1, y_1, \theta_1)$ and let $q_{goal} = (x_2, y_2, \theta_2)$. Let $D_t$ represent the translational distance from $q_{start}$ to $q_{goal}$ and let $D_r$ represent the rotational distance from $q_{start}$ to $q_{goal}$. Over each of the n segments, we will be moving a translational distance of $\frac{D_t}{n}$ and a rotational distance of $\frac{D_r}{n}$. If we have to move clockwise to go from start to goal, our animated rigid body will also move clockwise along each of the n segments.  If we have to move counterclockwise to go from start to goal, our animated rigid body will also move counterclockwise along each of the n segments. 
+
 \subsubsection{Interpolation With Respect to Topology}
 The topology, for the 2D Rigid Body, was $SE(2)$. For $\theta$, the angles can "wrap around" in a circle. Hence, as I mentioned earlier, I accounted for this with my calculation of the rotational distance needed to go from $\theta_1$ to $\theta_2$. Please refer to Algorithm 1 where I outlined specifically how $d_r$ would be calculated in such a case 
 
 % SECTION 2.4
+\newpage 
 \subsection{RRT Implementation}
 
 Let $V$ be the set of vertices of the RRT and $E$ be the set of edges of the RRT. 
